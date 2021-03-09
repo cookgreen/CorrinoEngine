@@ -68,9 +68,13 @@ namespace CorrinoEngine
 					foreach (var file in fileSystem.GetFiles())
 					{
 						if (file.EndsWith(".RFH", StringComparison.OrdinalIgnoreCase))
+						{
 							fileSystem.Add(new RfhFileSystem(new Rfh(fileSystem.Read(file)!, fileSystem.Read(file.Substring(0, file.Length - 1) + "D")!)));
+						}
 						else if (file.EndsWith(".BAG", StringComparison.OrdinalIgnoreCase))
+						{
 							fileSystem.Add(new BagFileSystem(new Bag(fileSystem.Read(file)!)));
+						}
 					}
 				}
 
