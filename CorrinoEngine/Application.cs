@@ -1,18 +1,20 @@
+using CorrinoEngine.Assets;
+using CorrinoEngine.Cameras;
+using CorrinoEngine.FileSystem;
+using CorrinoEngine.Graphics.Mesh;
+using CorrinoEngine.Mods;
+using CorrinoEngine.Renderer;
+using LibEmperor;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
+using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
+using System;
+using System.Collections.Generic;
+
 namespace CorrinoEngine
 {
-	using Assets;
-	using Cameras;
-	using FileSystem;
-	using Graphics.Mesh;
-	using LibEmperor;
-	using OpenTK.Graphics.OpenGL4;
-	using OpenTK.Mathematics;
-	using OpenTK.Windowing.Common;
-	using OpenTK.Windowing.Desktop;
-	using OpenTK.Windowing.GraphicsLibraryFramework;
-	using System;
-	using System.Collections.Generic;
-
 	public class Application : GameWindow
 	{
 		private AssetManager assetManager;
@@ -21,10 +23,16 @@ namespace CorrinoEngine
 		private string? model;
 		private XbfMesh? mesh;
 		private MeshInstance? meshInstance;
+		private Argument argument;
+		private ModelRenderer modelRenderer;
+		private ModManager modManager;
 
-		public Application()
+		public Application(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
 		{
+			this.argument = argument;
+			modelRenderer = new ModelRenderer();
+			modManager = new ModManager();
 		}
 
 		protected override void OnLoad()
@@ -33,6 +41,8 @@ namespace CorrinoEngine
 			GL.Enable(EnableCap.DepthTest);
 			GL.Enable(EnableCap.Blend);
 			GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+
+			modManager.LoadMods();
 
 			var fileSystem = new VirtualFileSystem();
 			fileSystem.Add(new FolderFileSystem("C:/Westwood/Emperor"));

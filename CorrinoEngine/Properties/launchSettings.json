@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Emperor : Battle for Dune": {
+      "commandName": "Project",
+      "commandLineArgs": "Mod=ebfd"
+    }
+  }
+}

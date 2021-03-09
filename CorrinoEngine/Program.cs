@@ -1,11 +1,13 @@
 ﻿namespace CorrinoEngine
 {
-	internal static class Program
+	public static class Program
 	{
-		private static void Main()
+		public static void Main(string[] args)
 		{
-			using var viewer = new Application();
-			viewer.Run();
+			Argument argument = new Argument(args);
+
+			using var app = new Application(argument);
+			app.Run();
 		}
 	}
 }
