@@ -3,16 +3,12 @@
     <PropertyGroup>
         <TargetFramework>net5.0</TargetFramework>
         <Nullable>enable</Nullable>
-        <OutputType>Exe</OutputType>
+        <OutputType>WinExe</OutputType>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
       <OutputPath>..\</OutputPath>
     </PropertyGroup>
-
-    <ItemGroup>
-      <Compile Include="Maps\GameMap.cs" />
-    </ItemGroup>
 
     <ItemGroup>
       <PackageReference Include="ImGui.NET" Version="1.78.0" />
