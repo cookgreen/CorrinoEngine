@@ -10,6 +10,11 @@ namespace CorrinoEngine
     {
         private Dictionary<string, string> argDic;
 
+        public int Length
+        {
+            get { return argDic.Count; }
+        }
+
         public Argument(string[] args)
         {
             argDic = new Dictionary<string, string>();
@@ -18,6 +23,11 @@ namespace CorrinoEngine
                 string[] tokens = arg.Split('=');
                 argDic[tokens[0]] = tokens[1];
             }
+        }
+
+        public bool Contains(string key)
+        {
+            return argDic.ContainsKey(key);
         }
 
         public string GetArgumentParameter(string key)

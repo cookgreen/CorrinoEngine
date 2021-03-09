@@ -12,6 +12,8 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 
 namespace CorrinoEngine
 {
@@ -44,29 +46,53 @@ namespace CorrinoEngine
 
 			modManager.LoadMods();
 
-			var fileSystem = new VirtualFileSystem();
-			fileSystem.Add(new FolderFileSystem("C:/Westwood/Emperor"));
-
-			foreach (var file in fileSystem.GetFiles())
+			ModData? currentMod = null;
+			if (argument.Length > 0 && argument.Contains("Mod"))
 			{
-				if (file.EndsWith(".RFH", StringComparison.OrdinalIgnoreCase))
-					fileSystem.Add(new RfhFileSystem(new Rfh(fileSystem.Read(file)!, fileSystem.Read(file.Substring(0, file.Length - 1) + "D")!)));
-				else if (file.EndsWith(".BAG", StringComparison.OrdinalIgnoreCase))
-					fileSystem.Add(new BagFileSystem(new Bag(fileSystem.Read(file)!)));
+				currentMod = modManager.LoadSpecificMod(argument.GetArgumentParameter("Mod"));
+			}
+			else if (modManager.Mods.Count > 0)
+			{
+				currentMod = modManager.Mods.ElementAt(0).Value;
 			}
 
-			this.assetManager = new AssetManager(fileSystem);
-
-			this.models = new List<string>();
-
-			foreach (var file in fileSystem.GetFiles())
-				if (file.EndsWith(".XBF", StringComparison.OrdinalIgnoreCase))
-					this.models.Add(file);
-
-			this.camera = new PerspectiveCamera
+			if (currentMod != null)
 			{
-				Size = new Vector2(this.Size.X, this.Size.Y), Direction = new Vector3(0, -1, 1).Normalized(), Position = new Vector3(0, 1, -1) * 128
-			};
+				var fileSystem = new VirtualFileSystem();
+
+				foreach (var asset in currentMod.Manifest.Asset.Assets)
+				{
+					string assetFullPath = Path.Combine(Environment.CurrentDirectory, "Mods/" + currentMod.ID, asset);
+					fileSystem.Add(new FolderFileSystem(assetFullPath));
+
+					foreach (var file in fileSystem.GetFiles())
+					{
+						if (file.EndsWith(".RFH", StringComparison.OrdinalIgnoreCase))
+							fileSystem.Add(new RfhFileSystem(new Rfh(fileSystem.Read(file)!, fileSystem.Read(file.Substring(0, file.Length - 1) + "D")!)));
+						else if (file.EndsWith(".BAG", StringComparison.OrdinalIgnoreCase))
+							fileSystem.Add(new BagFileSystem(new Bag(fileSystem.Read(file)!)));
+					}
+				}
+
+				this.assetManager = new AssetManager(fileSystem);
+
+				this.models = new List<string>();
+
+				foreach (var file in fileSystem.GetFiles())
+				{
+					if (file.EndsWith(".XBF", StringComparison.OrdinalIgnoreCase))
+					{
+						this.models.Add(file);
+					}
+				}
+
+				this.camera = new PerspectiveCamera
+				{
+					Size = new Vector2(this.Size.X, this.Size.Y),
+					Direction = new Vector3(0, -1, 1).Normalized(),
+					Position = new Vector3(0, 1, -1) * 128
+				};
+			}
 		}
 
 		protected override void OnResize(ResizeEventArgs args)
