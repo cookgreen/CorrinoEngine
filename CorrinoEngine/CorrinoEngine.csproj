@@ -11,11 +11,18 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <PackageReference Include="OpenTK" Version="4.3.0" />
+      <PackageReference Include="ImGui.NET" Version="1.78.0" />
+      <PackageReference Include="OpenTK" Version="4.5.0" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\LibEmperor\LibEmperor.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Reference Include="ImGuiNet.OpenTK">
+        <HintPath>..\lib\ImGuiNet.OpenTK.dll</HintPath>
+      </Reference>
     </ItemGroup>
 
 </Project>
