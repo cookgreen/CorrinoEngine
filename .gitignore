@@ -1,0 +1,9 @@
+.vs/*
+*/bin/
+*/obj/
+net5.0/*.exe
+net5.0/*.dll
+net5.0/*.json
+net5.0/*.pdb
+net5.0/runtimes/
+net5.0/ref/

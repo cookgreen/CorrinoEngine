@@ -6,6 +6,10 @@
         <OutputType>Exe</OutputType>
     </PropertyGroup>
 
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+      <OutputPath>..\</OutputPath>
+    </PropertyGroup>
+
     <ItemGroup>
       <PackageReference Include="OpenTK" Version="4.3.0" />
     </ItemGroup>
