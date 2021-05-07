@@ -1,28 +1,29 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-    <PropertyGroup>
-        <TargetFramework>net5.0</TargetFramework>
-        <Nullable>enable</Nullable>
-        <OutputType>WinExe</OutputType>
-    </PropertyGroup>
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net5.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <StartupObject>CorrinoEngine.Program</StartupObject>
+    <ApplicationIcon>ebfd.ico</ApplicationIcon>
+  </PropertyGroup>
 
-    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-      <OutputPath>..\</OutputPath>
-    </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <OutputPath>..\bin</OutputPath>
+  </PropertyGroup>
 
-    <ItemGroup>
-      <PackageReference Include="ImGui.NET" Version="1.78.0" />
-      <PackageReference Include="OpenTK" Version="4.5.0" />
-    </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="OpenTK" Version="4.6.3" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\LibEmperor\LibEmperor.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\LibEmperor\LibEmperor.csproj" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <Reference Include="ImGuiNet.OpenTK">
-        <HintPath>..\lib\ImGuiNet.OpenTK.dll</HintPath>
-      </Reference>
-    </ItemGroup>
+  <ItemGroup>
+    <Reference Include="ImGuiNet.OpenTK">
+      <HintPath>..\lib\ImGuiNet.OpenTK.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 
 </Project>

@@ -9,19 +9,41 @@ namespace CorrinoEngine.Mods
 {
     public class ModManager
     {
+        private bool isLoaded;
         private Dictionary<string, ModData> mods;
         public Dictionary<string, ModData> Mods
         {
             get { return mods; }
         }
 
+        private static ModManager instance;
+        public static ModManager Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new ModManager();
+                }
+                return instance;
+            }
+        }
+
         public ModManager()
         {
             mods = new Dictionary<string, ModData>();
+            isLoaded = false;
         }
 
         public void LoadMods()
         {
+            if(!isLoaded)
+            {
+                isLoaded = true;
+            }
+
+            mods.Clear();
+
             string modFolder = "mods";
             string modFullPath = Path.Combine(Environment.CurrentDirectory, modFolder);
             DirectoryInfo di = new DirectoryInfo(modFullPath);

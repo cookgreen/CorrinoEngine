@@ -17,23 +17,22 @@ using System.Linq;
 
 namespace CorrinoEngine
 {
-	public class Application : GameWindow
+	public class GameApp : GameWindow
 	{
 		private AssetManager assetManager;
-		private List<string> models;
 		private Camera camera;
 		private string? model;
 		private XbfMesh? mesh;
 		private MeshInstance? meshInstance;
 		private Argument argument;
-		private ModelRenderer modelRenderer;
+		private WorldRenderer worldRenderer;
 		private ModManager modManager;
 
-		public Application(Argument argument)
+		public GameApp(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
 		{
 			this.argument = argument;
-			modelRenderer = new ModelRenderer();
+			worldRenderer = new WorldRenderer();
 			modManager = new ModManager();
 		}
 
@@ -80,17 +79,17 @@ namespace CorrinoEngine
 
 				this.assetManager = new AssetManager(fileSystem);
 
-				this.models = new List<string>();
+				//this.models = new List<string>();
+				//
+				//foreach (var file in fileSystem.GetFiles())
+				//{
+				//	if (file.EndsWith(".XBF", StringComparison.OrdinalIgnoreCase))
+				//	{
+				//		this.models.Add(file);
+				//	}
+				//}
 
-				foreach (var file in fileSystem.GetFiles())
-				{
-					if (file.EndsWith(".XBF", StringComparison.OrdinalIgnoreCase))
-					{
-						this.models.Add(file);
-					}
-				}
-
-				this.camera = new PerspectiveCamera
+				camera = new PerspectiveCamera
 				{
 					Size = new Vector2(this.Size.X, this.Size.Y),
 					Direction = new Vector3(0, -1, 1).Normalized(),
@@ -107,37 +106,30 @@ namespace CorrinoEngine
 
 		protected override void OnUpdateFrame(FrameEventArgs args)
 		{
-			if (this.meshInstance != null)
-			{
-				this.meshInstance.World *= Matrix4.CreateRotationY((float) args.Time / 5);
-				this.meshInstance.Update((float) args.Time);
-			}
+			worldRenderer.UpdateFrame(args);
 
-			if (this.KeyboardState.IsKeyPressed(Keys.Enter) || this.model == null)
-				this.LoadXbf(this.models[this.model == null ? 0 : (this.models.IndexOf(this.model) + 1) % this.models.Count]);
+			//if (this.KeyboardState.IsKeyPressed(Keys.Enter) || this.model == null)
+			//	this.LoadXbf(this.models[this.model == null ? 0 : (this.models.IndexOf(this.model) + 1) % this.models.Count]);
 		}
 
 		private void LoadXbf(string model)
 		{
-			this.model = model;
+			var mesh = assetManager.Load<XbfMesh>(this, model);
 
-			if (this.mesh != null)
-				this.assetManager.Unload(this, this.mesh);
+			var meshInstance = new MeshInstance(mesh) {Speed = 20};
 
-			this.mesh = this.assetManager.Load<XbfMesh>(this, model);
-
-			this.meshInstance = new MeshInstance(this.mesh) {Speed = 20};
+			worldRenderer.RenderModel(meshInstance);
 		}
 
 		protected override void OnRenderFrame(FrameEventArgs args)
 		{
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 
-			this.camera.Update();
+			camera.Update();
 
-			this.meshInstance?.Draw(this.camera);
+			worldRenderer.RenderFrame(args, camera);
 
-			this.Context.SwapBuffers();
+			Context.SwapBuffers();
 		}
 	}
 }
