@@ -24,7 +24,8 @@ namespace CorrinoEngine
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-            if (argument.Contains("Mod") && ModManager.Instance.Mods.ContainsKey(argument.GetArgumentParameter("Mod")))
+            if (argument.Contains("Mod") && 
+                ModManager.Instance.Mods.ContainsKey(argument.GetArgumentParameter("Mod")))
             {
                 GameApp app = new GameApp(argument);
                 app.Run();
