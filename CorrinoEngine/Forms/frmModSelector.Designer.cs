@@ -62,6 +62,7 @@ namespace CorrinoEngine.Forms
             this.listView1.TabIndex = 0;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
+            this.listView1.SelectedIndexChanged += new System.EventHandler(this.listView1_SelectedIndexChanged);
             // 
             // colID
             // 
@@ -89,6 +90,7 @@ namespace CorrinoEngine.Forms
             // 
             // btnOK
             // 
+            this.btnOK.Enabled = false;
             this.btnOK.Location = new System.Drawing.Point(191, 364);
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(75, 23);

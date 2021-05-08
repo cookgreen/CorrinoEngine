@@ -13,6 +13,12 @@ namespace CorrinoEngine.Forms
 {
     public partial class frmModSelector : Form
     {
+        private Argument argument;
+        public Argument Argument
+        {
+            get { return argument; }
+        }
+
         public frmModSelector()
         {
             InitializeComponent();
@@ -22,6 +28,7 @@ namespace CorrinoEngine.Forms
         {
             if (listView1.SelectedIndices.Count == 0)
             {
+                MessageBox.Show("Please select a valid mod!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
@@ -30,15 +37,12 @@ namespace CorrinoEngine.Forms
 
             string[] strArr = new string[]
             {
-                "Mod="+id
+                "Mod=" + id
             };
-            Argument argument = new Argument(strArr);
+            argument = new Argument(strArr);
 
-            Hide();
             DialogResult = DialogResult.OK;
-
-            GameApp app = new GameApp(argument);
-            app.Run();
+            Close();
         }
 
         private void btnCancel_Click(object sender, EventArgs e)
@@ -56,6 +60,18 @@ namespace CorrinoEngine.Forms
                 lvi.SubItems.Add(mod.Value.Manifest.MetaData.Name);
                 lvi.SubItems.Add(mod.Value.Manifest.MetaData.Author);
                 listView1.Items.Add(lvi);
+            }
+        }
+
+        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listView1.SelectedItems.Count == 0)
+            {
+                btnOK.Enabled = false;
+            }
+            else
+            {
+                btnOK.Enabled = true;
             }
         }
     }

@@ -32,7 +32,12 @@ namespace CorrinoEngine
             }
             else
             {
-                Application.Run(new frmModSelector());
+                var modSelectorWin = new frmModSelector();
+                if (modSelectorWin.ShowDialog() == DialogResult.OK)
+                {
+                    GameApp app = new GameApp(modSelectorWin.Argument);
+                    app.Run();
+                }
             }
         }
     }

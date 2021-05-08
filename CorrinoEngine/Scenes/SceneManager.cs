@@ -41,6 +41,12 @@ namespace CorrinoEngine.Scenes
                     newScene = new InnerGameScene();
                     break;
             }
+
+            if(scenes.Count>0)
+            {
+                scenes.Peek().Exit();
+            }
+
             scenes.Push(newScene);
 
             newScene.Start();

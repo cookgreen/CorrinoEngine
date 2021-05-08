@@ -1,8 +1,10 @@
 ﻿using CorrinoEngine.Cameras;
 using CorrinoEngine.Graphics.Mesh;
+using CorrinoEngine.UI;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
+using OpenTK.Windowing.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +15,19 @@ namespace CorrinoEngine.Renderer
 {
     public class WorldRenderer
     {
+        private ImGuiController imGuiController;
         private List<MeshInstance> meshInstances;
+        private GameWindow wnd;
 
-        public WorldRenderer()
+        public WorldRenderer(int width, int height, GameWindow wnd)
         {
+            this.wnd = wnd;
             meshInstances = new List<MeshInstance>();
+        }
+
+        public void Loaded()
+        {
+            imGuiController = new ImGuiController(wnd.Size.X, wnd.Size.Y);
         }
 
         public void RenderModel(MeshInstance meshInstance)
@@ -31,6 +41,8 @@ namespace CorrinoEngine.Renderer
             {
                 meshInstance.Draw(camera);
             }
+
+            imGuiController?.Render();
         }
 
         public void UpdateFrame(FrameEventArgs args)
@@ -40,6 +52,8 @@ namespace CorrinoEngine.Renderer
                 meshInstance.World *= Matrix4.CreateRotationY((float)args.Time / 5);
                 meshInstance.Update((float)args.Time);
             }
+
+            imGuiController?.Update(wnd, (float)args.Time);
         }
     }
 }

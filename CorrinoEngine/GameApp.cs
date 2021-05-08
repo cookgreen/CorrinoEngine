@@ -29,7 +29,6 @@ namespace CorrinoEngine
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
 		{
 			this.argument = argument;
-			worldRenderer = new WorldRenderer();
 		}
 
 		protected override void OnLoad()
@@ -52,6 +51,8 @@ namespace CorrinoEngine
 			loadAssest(currentMod);
 
 			SceneManager.Instance.StartNewScene("MainMenu");
+
+			WindowState = WindowState.Fullscreen;
 		}
 
         private void loadAssest(ModData currentMod)
@@ -91,6 +92,8 @@ namespace CorrinoEngine
 
         protected override void OnResize(ResizeEventArgs args)
 		{
+			worldRenderer = new WorldRenderer(Size.X, Size.Y, this);
+
 			GL.Viewport(0, 0, args.Width, args.Height);
 			camera.Size = new Vector2(args.Width, args.Height);
 		}
@@ -122,5 +125,10 @@ namespace CorrinoEngine
 
 			Context.SwapBuffers();
 		}
-	}
+
+        protected override void OnUnload()
+        {
+			System.Windows.Forms.Application.Exit();
+        }
+    }
 }
