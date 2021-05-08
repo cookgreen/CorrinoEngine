@@ -4,6 +4,7 @@ using CorrinoEngine.FileSystem;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Mods;
 using CorrinoEngine.Renderer;
+using CorrinoEngine.Scenes;
 using LibEmperor;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -21,19 +22,14 @@ namespace CorrinoEngine
 	{
 		private AssetManager assetManager;
 		private Camera camera;
-		private string? model;
-		private XbfMesh? mesh;
-		private MeshInstance? meshInstance;
 		private Argument argument;
 		private WorldRenderer worldRenderer;
-		private ModManager modManager;
 
 		public GameApp(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
 		{
 			this.argument = argument;
 			worldRenderer = new WorldRenderer();
-			modManager = new ModManager();
 		}
 
 		protected override void OnLoad()
@@ -43,18 +39,23 @@ namespace CorrinoEngine
 			GL.Enable(EnableCap.Blend);
 			GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
 
-			modManager.LoadMods();
-
-			ModData? currentMod = null;
+			ModData currentMod = null;
 			if (argument.Length > 0 && argument.Contains("Mod"))
 			{
-				currentMod = modManager.LoadSpecificMod(argument.GetArgumentParameter("Mod"));
+				currentMod = ModManager.Instance.LoadSpecificMod(argument.GetArgumentParameter("Mod"));
 			}
-			else if (modManager.Mods.Count > 0)
+			else if (ModManager.Instance.Mods.Count > 0)
 			{
-				currentMod = modManager.Mods.ElementAt(0).Value;
+				currentMod = ModManager.Instance.Mods.ElementAt(0).Value;
 			}
 
+			loadAssest(currentMod);
+
+			SceneManager.Instance.StartNewScene("MainMenu");
+		}
+
+        private void loadAssest(ModData currentMod)
+		{
 			if (currentMod != null)
 			{
 				var fileSystem = new VirtualFileSystem();
@@ -77,17 +78,7 @@ namespace CorrinoEngine
 					}
 				}
 
-				this.assetManager = new AssetManager(fileSystem);
-
-				//this.models = new List<string>();
-				//
-				//foreach (var file in fileSystem.GetFiles())
-				//{
-				//	if (file.EndsWith(".XBF", StringComparison.OrdinalIgnoreCase))
-				//	{
-				//		this.models.Add(file);
-				//	}
-				//}
+				assetManager = new AssetManager(fileSystem);
 
 				camera = new PerspectiveCamera
 				{
@@ -98,10 +89,10 @@ namespace CorrinoEngine
 			}
 		}
 
-		protected override void OnResize(ResizeEventArgs args)
+        protected override void OnResize(ResizeEventArgs args)
 		{
 			GL.Viewport(0, 0, args.Width, args.Height);
-			this.camera.Size = new Vector2(args.Width, args.Height);
+			camera.Size = new Vector2(args.Width, args.Height);
 		}
 
 		protected override void OnUpdateFrame(FrameEventArgs args)

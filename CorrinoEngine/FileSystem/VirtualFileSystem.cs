@@ -25,7 +25,7 @@
 			return this.fileSystems.Any(fileSystem => fileSystem.Exists(path));
 		}
 
-		public Stream? Read(string path)
+		public Stream Read(string path)
 		{
 			return this.fileSystems.FirstOrDefault(fileSystem => fileSystem.Exists(path))?.Read(path);
 		}
@@ -45,7 +45,7 @@
 			(this.fileSystems.FirstOrDefault(fileSystem => fileSystem.Exists(path)) as IWritableFileSystem)?.Delete(path);
 		}
 
-		public Stream? Write(string path)
+		public Stream Write(string path)
 		{
 			return this.fileSystems.OfType<IWritableFileSystem>().FirstOrDefault()?.Write(path);
 		}

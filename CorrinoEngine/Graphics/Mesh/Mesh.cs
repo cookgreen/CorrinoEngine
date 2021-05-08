@@ -10,10 +10,10 @@
 	{
 		public string Name;
 		public Matrix4? Transform;
-		public Matrix4[]? TransformAnimation;
-		public Mesh[]? Children;
+		public Matrix4[] TransformAnimation;
+		public Mesh[] Children;
 
-		protected IShaderParameters? ShaderParameters;
+		protected IShaderParameters ShaderParameters;
 		protected int NumIndices;
 		protected int VertexBufferObject;
 		protected int IndexBufferObject;
@@ -23,7 +23,7 @@
 		{
 		}
 
-		public Mesh(IShaderParameters? shaderParameters, float[]? vertices, int[]? indices)
+		public Mesh(IShaderParameters shaderParameters, float[] vertices, int[] indices)
 		{
 			if (shaderParameters == null || vertices == null || indices == null)
 				return;

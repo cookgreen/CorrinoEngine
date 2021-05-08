@@ -5,6 +5,6 @@
 	public interface IWritableFileSystem : IReadableFileSystem
 	{
 		public void Delete(string path);
-		public Stream? Write(string path);
+		public Stream Write(string path);
 	}
 }

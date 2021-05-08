@@ -19,7 +19,7 @@
 			return File.Exists(Path.Combine(this.path, path));
 		}
 
-		public Stream? Read(string path)
+		public Stream Read(string path)
 		{
 			try
 			{
@@ -42,7 +42,7 @@
 			File.Delete(Path.Combine(this.path, path));
 		}
 
-		public Stream? Write(string path)
+		public Stream Write(string path)
 		{
 			try
 			{

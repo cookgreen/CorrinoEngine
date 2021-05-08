@@ -22,7 +22,7 @@ namespace CorrinoEngine.FileSystem
 			return this.bag.Files.Any(bagEntry => string.Equals(bagEntry.Path, bagPath, StringComparison.OrdinalIgnoreCase));
 		}
 
-		public Stream? Read(string path)
+		public Stream Read(string path)
 		{
 			var bagPath = path.Replace('/', '\\');
 			var entry = this.bag.Files.FirstOrDefault(bagEntry => string.Equals(bagEntry.Path, bagPath, StringComparison.OrdinalIgnoreCase));

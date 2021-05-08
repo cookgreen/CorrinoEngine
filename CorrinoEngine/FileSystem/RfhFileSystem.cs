@@ -22,7 +22,7 @@ namespace CorrinoEngine.FileSystem
 			return this.rfh.Files.Any(rfhEntry => string.Equals(rfhEntry.Path, rfhPath, StringComparison.OrdinalIgnoreCase));
 		}
 
-		public Stream? Read(string path)
+		public Stream Read(string path)
 		{
 			var rfhPath = path.Replace('/', '\\');
 			var entry = this.rfh.Files.FirstOrDefault(rfhEntry => rfhEntry.Path.Equals(rfhPath, StringComparison.OrdinalIgnoreCase));
