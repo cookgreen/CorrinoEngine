@@ -9,9 +9,22 @@ namespace CorrinoEngine.UI
 {
     public class UIManager
     {
-        public void xx()
+        private static UIManager instance;
+        public static UIManager Instance
         {
-            
+            get 
+            {
+                if (instance == null)
+                {
+                    instance = new UIManager();
+                }
+                return instance;
+            }
+        }
+
+        public void CreateButton(string name)
+        {
+            ImGui.Button(name);
         } 
     }
 }

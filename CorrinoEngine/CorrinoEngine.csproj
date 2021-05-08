@@ -27,4 +27,13 @@
     </Reference>
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="ebfd-logo.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="ebfd.ico">
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

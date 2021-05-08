@@ -5,6 +5,7 @@ using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Mods;
 using CorrinoEngine.Renderer;
 using CorrinoEngine.Scenes;
+using CorrinoEngine.UI;
 using LibEmperor;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
@@ -13,13 +14,16 @@ using OpenTK.Windowing.Desktop;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CorrinoEngine
 {
 	public class GameApp : GameWindow
 	{
+		private ImGuiController imGuiController;
 		private AssetManager assetManager;
 		private Camera camera;
 		private Argument argument;
@@ -50,9 +54,9 @@ namespace CorrinoEngine
 
 			loadAssest(currentMod);
 
-			SceneManager.Instance.StartNewScene("MainMenu");
-
 			WindowState = WindowState.Fullscreen;
+
+			SceneManager.Instance.StartNewScene("MainMenu");
 		}
 
         private void loadAssest(ModData currentMod)
@@ -95,6 +99,9 @@ namespace CorrinoEngine
 			worldRenderer = new WorldRenderer(Size.X, Size.Y, this);
 
 			GL.Viewport(0, 0, args.Width, args.Height);
+
+			imGuiController = new ImGuiController(Size.X, Size.Y);
+
 			camera.Size = new Vector2(args.Width, args.Height);
 		}
 

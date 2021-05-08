@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CorrinoEngine.UI;
 using ImGuiNET;
 using ImGuiNETWidget;
 using ImGuiOpenTK;
@@ -18,6 +19,7 @@ namespace CorrinoEngine.Scenes.Customs
 
         private void buildMainMenuUI()
         {
+            UIManager.Instance.CreateButton("Start New Game");
         }
     }
 }
