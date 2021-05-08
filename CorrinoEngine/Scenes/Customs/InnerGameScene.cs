@@ -18,6 +18,8 @@ namespace CorrinoEngine.Scenes.Customs
 
         public override void Start()
         {
+            //GameMap => Terrain
+
             loadMap();
 
             createTerrain();
