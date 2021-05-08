@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK.Windowing.Desktop;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,9 +9,33 @@ namespace CorrinoEngine.Scenes.Customs
 {
     public class InnerGameScene : GameScene
     {
+        private GameApp gameApp;
+
+        public InnerGameScene(GameWindow wnd): base(wnd)
+        {
+            gameApp = (GameApp)wnd;
+        }
+
         public override void Start()
         {
-            base.Start();
+            loadMap();
+
+            createTerrain();
+        }
+
+        private void loadMap()
+        {
+
+        }
+
+        private void createTerrain()
+        {
+
+        }
+
+        public override void Exit()
+        {
+            base.Exit();
         }
     }
 }

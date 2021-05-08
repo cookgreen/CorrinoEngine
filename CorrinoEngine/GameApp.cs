@@ -28,6 +28,7 @@ namespace CorrinoEngine
 		private Camera camera;
 		private Argument argument;
 		private WorldRenderer worldRenderer;
+		private TerrainRenderer terrainRenderer;
 
 		public GameApp(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
@@ -56,7 +57,7 @@ namespace CorrinoEngine
 
 			WindowState = WindowState.Fullscreen;
 
-			SceneManager.Instance.StartNewScene("MainMenu");
+			SceneManager.Instance.StartNewScene("InnerGame", this);
 		}
 
         private void loadAssest(ModData currentMod)
@@ -97,6 +98,7 @@ namespace CorrinoEngine
         protected override void OnResize(ResizeEventArgs args)
 		{
 			worldRenderer = new WorldRenderer(Size.X, Size.Y, this);
+			terrainRenderer = new TerrainRenderer(this);
 
 			GL.Viewport(0, 0, args.Width, args.Height);
 

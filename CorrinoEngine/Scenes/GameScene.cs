@@ -1,4 +1,5 @@
-﻿using System;
+﻿using OpenTK.Windowing.Desktop;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -8,6 +9,13 @@ namespace CorrinoEngine.Scenes
 {
     public class GameScene
     {
+        protected GameWindow wnd;
+
+        public GameScene(GameWindow wnd)
+        {
+            this.wnd = wnd;
+        }
+
         public virtual void Start()
         {
 

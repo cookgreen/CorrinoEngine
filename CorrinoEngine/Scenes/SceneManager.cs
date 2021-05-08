@@ -1,4 +1,5 @@
 ﻿using CorrinoEngine.Scenes.Customs;
+using OpenTK.Windowing.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,16 +30,16 @@ namespace CorrinoEngine.Scenes
             scenes = new Stack<GameScene>();
         }
 
-        public void StartNewScene(string sceneName)
+        public void StartNewScene(string sceneName, GameWindow wnd)
         {
             GameScene newScene = null;
             switch(sceneName)
             {
                 case "MainMenu":
-                    newScene = new MainMenuScene();
+                    newScene = new MainMenuScene(wnd);
                     break;
                 case "InnerGame":
-                    newScene = new InnerGameScene();
+                    newScene = new InnerGameScene(wnd);
                     break;
             }
 
