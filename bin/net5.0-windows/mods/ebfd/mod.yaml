@@ -5,3 +5,11 @@ MetaData:
     
 Assets:
 	Assets/
+	
+Settings:
+	Settings/Atreides-Buildings.yaml
+	Settings/Atreides-Units.yaml
+	Settings/Harkonnen-Buildings.yaml
+	Settings/Harkonnen-Units.yaml
+	Settings/Ordos-Buildings.yaml
+	Settings/Ordos-Units.yaml
