@@ -12,6 +12,7 @@ namespace CorrinoEngine.Topography
         private MeshInstance meshInstance;
         private int x;
         private int y;
+        private int z;
 
         public MeshInstance MeshInstance
         {
@@ -28,11 +29,17 @@ namespace CorrinoEngine.Topography
             get { return y; }
         }
 
-        public TerrainTile(MeshInstance meshInstance, int x, int y)
+        public int Z
+        {
+            get { return z; }
+        }
+
+        public TerrainTile(MeshInstance meshInstance, int x, int y, int z)
         {
             this.meshInstance = meshInstance;
             this.x = x;
             this.y = y;
+            this.z = z;
         }
     }
 }

@@ -97,7 +97,8 @@ namespace CorrinoEngine
 
         protected override void OnResize(ResizeEventArgs args)
 		{
-			worldRenderer = new WorldRenderer(Size.X, Size.Y, this);
+			WorldRenderer.Instance.Init(this);
+			worldRenderer = WorldRenderer.Instance;
 			terrainRenderer = new TerrainRenderer(this);
 
 			GL.Viewport(0, 0, args.Width, args.Height);

@@ -1,4 +1,5 @@
 ﻿using CorrinoEngine.Cameras;
+using CorrinoEngine.Game;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.UI;
 using OpenTK.Graphics.OpenGL4;
@@ -18,16 +19,41 @@ namespace CorrinoEngine.Renderer
         private ImGuiController imGuiController;
         private List<MeshInstance> meshInstances;
         private GameWindow wnd;
+        private List<Actor> actors;
 
-        public WorldRenderer(int width, int height, GameWindow wnd)
+
+        private static WorldRenderer instance;
+        public static WorldRenderer Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new WorldRenderer();
+                }
+                return instance;
+            }
+        }
+
+        public WorldRenderer()
+        {
+            meshInstances = new List<MeshInstance>();
+            actors = new List<Actor>();
+        }
+
+        public void Init(GameWindow wnd)
         {
             this.wnd = wnd;
-            meshInstances = new List<MeshInstance>();
         }
 
         public void Loaded()
         {
             imGuiController = new ImGuiController(wnd.Size.X, wnd.Size.Y);
+        }
+
+        public void AppendActor(Actor actor)
+        {
+            actors.Add(actor);
         }
 
         public void RenderModel(MeshInstance meshInstance)
@@ -41,6 +67,10 @@ namespace CorrinoEngine.Renderer
             {
                 meshInstance.Draw(camera);
             }
+            foreach (var actor in actors)
+            {
+                actor.Draw(args, camera);
+            }
 
             imGuiController?.Render();
         }
@@ -51,6 +81,10 @@ namespace CorrinoEngine.Renderer
             {
                 meshInstance.World *= Matrix4.CreateRotationY((float)args.Time / 5);
                 meshInstance.Update((float)args.Time);
+            }
+            foreach (var actor in actors)
+            {
+                actor.Update(args);
             }
 
             imGuiController?.Update(wnd, (float)args.Time);
