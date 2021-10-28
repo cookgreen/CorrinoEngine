@@ -5,7 +5,7 @@ VisualStudioVersion = 16.0.31205.134
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibEmperor", "LibEmperor\LibEmperor.csproj", "{FC6E31DA-A076-4AA9-8838-6F67D54CDD88}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorrinoEngine", "CorrinoEngine\CorrinoEngine.csproj", "{FCD446DB-53EB-47A4-BA53-696DB30A7AB3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorrinoEngine", "Engine\CorrinoEngine.csproj", "{FCD446DB-53EB-47A4-BA53-696DB30A7AB3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

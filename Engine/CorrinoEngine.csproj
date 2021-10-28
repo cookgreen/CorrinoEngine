@@ -6,6 +6,7 @@
     <UseWindowsForms>true</UseWindowsForms>
     <StartupObject>CorrinoEngine.Program</StartupObject>
     <ApplicationIcon>ebfd.ico</ApplicationIcon>
+    <AssemblyName>game</AssemblyName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

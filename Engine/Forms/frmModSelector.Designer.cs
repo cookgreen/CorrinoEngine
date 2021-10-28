@@ -58,7 +58,7 @@ namespace CorrinoEngine.Forms
             this.listView1.Location = new System.Drawing.Point(13, 13);
             this.listView1.MultiSelect = false;
             this.listView1.Name = "listView1";
-            this.listView1.Size = new System.Drawing.Size(334, 344);
+            this.listView1.Size = new System.Drawing.Size(606, 344);
             this.listView1.TabIndex = 0;
             this.listView1.UseCompatibleStateImageBehavior = false;
             this.listView1.View = System.Windows.Forms.View.Details;
@@ -71,18 +71,18 @@ namespace CorrinoEngine.Forms
             // colName
             // 
             this.colName.Text = "Name";
-            this.colName.Width = 120;
+            this.colName.Width = 260;
             // 
             // colAuthor
             // 
             this.colAuthor.Text = "Author";
-            this.colAuthor.Width = 200;
+            this.colAuthor.Width = 260;
             // 
             // btnCancel
             // 
-            this.btnCancel.Location = new System.Drawing.Point(272, 364);
+            this.btnCancel.Location = new System.Drawing.Point(511, 364);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(75, 23);
+            this.btnCancel.Size = new System.Drawing.Size(108, 41);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Cancel";
             this.btnCancel.UseVisualStyleBackColor = true;
@@ -91,9 +91,9 @@ namespace CorrinoEngine.Forms
             // btnOK
             // 
             this.btnOK.Enabled = false;
-            this.btnOK.Location = new System.Drawing.Point(191, 364);
+            this.btnOK.Location = new System.Drawing.Point(397, 364);
             this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(75, 23);
+            this.btnOK.Size = new System.Drawing.Size(108, 41);
             this.btnOK.TabIndex = 2;
             this.btnOK.Text = "OK";
             this.btnOK.UseVisualStyleBackColor = true;
@@ -101,7 +101,7 @@ namespace CorrinoEngine.Forms
             // 
             // frmModSelector
             // 
-            this.ClientSize = new System.Drawing.Size(359, 399);
+            this.ClientSize = new System.Drawing.Size(631, 417);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.listView1);

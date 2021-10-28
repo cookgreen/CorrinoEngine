@@ -1,0 +1,1 @@
+Including all the factions data settings
