@@ -21,3 +21,6 @@ Models:
 	Models/Harkonnen-Units.yaml
 	Models/Ordos-Buildings.yaml
 	Models/Ordos-Units.yaml
+    
+Translate:
+	Translation/

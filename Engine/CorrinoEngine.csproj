@@ -23,12 +23,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Reference Include="ImGuiNet.OpenTK">
-      <HintPath>..\lib\ImGuiNet.OpenTK.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="ebfd-logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

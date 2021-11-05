@@ -24,7 +24,11 @@ namespace CorrinoEngine.UI
 
         public void CreateButton(string name)
         {
-            ImGui.Button(name);
         } 
+
+        public void StartUI(string internalUIName)
+        {
+
+        }
     }
 }
