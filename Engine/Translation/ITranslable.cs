@@ -8,6 +8,6 @@ namespace CorrinoEngine.Translation
 {
     public interface ITranslable
     {
-        void Translate(string translateLocateID);
+        string Translate(string translateLocateID);
     }
 }

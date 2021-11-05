@@ -14,13 +14,13 @@ Settings:
 	Settings/Ordos-Buildings.yaml
 	Settings/Ordos-Units.yaml
     
-Models:
-	Models/Atreides-Buildings.yaml
-	Models/Atreides-Units.yaml
-	Models/Harkonnen-Buildings.yaml
-	Models/Harkonnen-Units.yaml
-	Models/Ordos-Buildings.yaml
-	Models/Ordos-Units.yaml
+Anims:
+	Anims/Atreides-Buildings.yaml
+	Anims/Atreides-Units.yaml
+	Anims/Harkonnen-Buildings.yaml
+	Anims/Harkonnen-Units.yaml
+	Anims/Ordos-Buildings.yaml
+	Anims/Ordos-Units.yaml
     
 Translate:
 	Translation/

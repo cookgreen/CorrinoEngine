@@ -9,16 +9,15 @@ namespace CorrinoEngine.Translation
     public class TranslableString : ITranslable
     {
         private string id;
-        private string defaultDisplayString;
 
-        public TranslableString(string id, string defaultDisplayString)
+        public TranslableString(string id)
         {
-            
+            this.id = id;
         }
 
-        public void Translate(string translateLocateID)
+        public string Translate(string translateLocateID)
         {
-            throw new NotImplementedException();
+            return TranslateManager.Instance.GetTranslableString(translateLocateID, id);
         }
     }
 }

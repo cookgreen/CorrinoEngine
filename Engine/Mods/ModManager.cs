@@ -54,7 +54,7 @@ namespace CorrinoEngine.Mods
                 {
                     ModManifest modManifest = new ModManifest();
                     modManifest.Parse(modYamlFile);
-                    ModData modData = new ModData(folder.Name);
+                    ModData modData = new ModData(folder.Name, modFullPath);
                     modData.Manifest = modManifest;
                     mods[folder.Name] = modData;
                 }

@@ -10,8 +10,10 @@ namespace CorrinoEngine.Mods
     public class ModManifest
     {
         public ModManifestMetaData MetaData { get; set; }
-
         public ModManifestAsset Asset { get; set; }
+        public List<string> UnitSettings { get; set; }
+        public List<string> AnimSettings { get; set; }
+        public string TranslationDirectory { get; set; }
 
         public void Parse(string modYamlFile)
         {
@@ -27,10 +29,30 @@ namespace CorrinoEngine.Mods
                 else if (node.Name == "Assets")
                 {
                     Asset = new ModManifestAsset();
-                    foreach(var subNode in node.ChildNodes)
+                    foreach (var subNode in node.ChildNodes)
                     {
                         Asset.Assets.Add(subNode.Name);
                     }
+                }
+                else if (node.Name == "Settings")
+                {
+                    UnitSettings = new List<string>();
+                    foreach (var subNode in node.ChildNodes)
+                    {
+                        UnitSettings.Add(subNode.Name);
+                    }
+                }
+                else if (node.Name == "Anims")
+                {
+                    AnimSettings = new List<string>();
+                    foreach (var subNode in node.ChildNodes)
+                    {
+                        AnimSettings.Add(subNode.Name);
+                    }
+                }
+                else if (node.Name == "Translation")
+                {
+                    TranslationDirectory = node.ChildNodes[0].Name;
                 }
             }
         }
