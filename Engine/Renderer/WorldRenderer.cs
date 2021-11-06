@@ -16,7 +16,6 @@ namespace CorrinoEngine.Renderer
 {
     public class WorldRenderer
     {
-        private ImGuiController imGuiController;
         private List<MeshInstance> meshInstances;
         private GameWindow wnd;
         private List<Actor> actors;
@@ -48,7 +47,6 @@ namespace CorrinoEngine.Renderer
 
         public void Loaded()
         {
-            imGuiController = new ImGuiController(wnd.Size.X, wnd.Size.Y);
         }
 
         public void AppendActor(Actor actor)
@@ -71,8 +69,6 @@ namespace CorrinoEngine.Renderer
             {
                 actor.Draw(args, camera);
             }
-
-            imGuiController?.Render();
         }
 
         public void UpdateFrame(FrameEventArgs args)
@@ -86,8 +82,6 @@ namespace CorrinoEngine.Renderer
             {
                 actor.Update(args);
             }
-
-            imGuiController?.Update(wnd, (float)args.Time);
         }
     }
 }

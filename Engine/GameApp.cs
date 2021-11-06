@@ -23,7 +23,6 @@ namespace CorrinoEngine
 {
 	public class GameApp : GameWindow
 	{
-		private ImGuiController imGuiController;
 		private AssetManager assetManager;
 		private Camera camera;
 		private Argument argument;
@@ -102,8 +101,6 @@ namespace CorrinoEngine
 			terrainRenderer = new TerrainRenderer(this);
 
 			GL.Viewport(0, 0, args.Width, args.Height);
-
-			imGuiController = new ImGuiController(Size.X, Size.Y);
 
 			camera.Size = new Vector2(args.Width, args.Height);
 		}
