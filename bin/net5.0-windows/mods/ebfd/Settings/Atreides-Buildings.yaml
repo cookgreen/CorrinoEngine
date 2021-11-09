@@ -1,0 +1,3 @@
+atreides-barrack:
+	Name: %str_building_atreides_barrack_name|[Atreides Barrack]%
+	Description: %str_building_atreides_barrack_desc|[Atreides Barrack will train the Atreides infantries]%

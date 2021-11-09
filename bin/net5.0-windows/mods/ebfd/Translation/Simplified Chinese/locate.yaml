@@ -2,4 +2,5 @@ Locate: Simplified Chinese
 	str_faction_name_atreides: 亚崔迪
 	str_faction_name_harkonnen: 哈肯尼
 	str_faction_name_ordors: 奥多斯
-	str_building_name_barrack: 兵营
+	str_building_atreides_barrack_name: 亚崔迪兵营
+	str_building_atreides_barrack_desc: 用来训练步兵
