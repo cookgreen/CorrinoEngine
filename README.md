@@ -6,7 +6,6 @@ CorrinoeEngine is an open-source re-implementation of the Emperor : Battle for D
 ## Based on  
 .Net Core 5.0  
 OpenTK  
-ImGui.Net  
 
 ## Credit  
 IceReaper (Andre Mohren)  
