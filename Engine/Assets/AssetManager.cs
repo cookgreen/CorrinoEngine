@@ -18,6 +18,16 @@ namespace CorrinoEngine.Assets
 			this.fileSystem = fileSystem;
 		}
 
+		public IEnumerable<string> GetFiles(string path)
+		{
+			return fileSystem.GetFiles(path);
+		}
+
+		public IEnumerable<string> GetFilesByExtension(string extension)
+        {
+			return fileSystem.GetFilesByExtension(extension);
+        }
+
 		public T Load<T>(object holder) where T : class
 		{
 			return this.Load<T>(holder, typeof(T).FullName!);

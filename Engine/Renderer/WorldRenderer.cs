@@ -59,6 +59,14 @@ namespace CorrinoEngine.Renderer
             meshInstances.Add(meshInstance);
         }
 
+        public void UnloadCurrentModel()
+        {
+            if (meshInstances.Count > 0)
+            {
+                meshInstances.RemoveAt(0);
+            }
+        }
+
         public void RenderFrame(FrameEventArgs args, Camera camera)
         {
             foreach (var meshInstance in meshInstances)

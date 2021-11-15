@@ -37,6 +37,11 @@
 				.Select(file => file.Substring(this.path.Length).Replace('\\', '/').Trim('/'));
 		}
 
+		public IEnumerable<string> GetFilesByExtension(string extension = "")
+		{
+			return Directory.GetFiles(path, "*." + extension, SearchOption.AllDirectories);
+		}
+
 		public void Delete(string path)
 		{
 			File.Delete(Path.Combine(this.path, path));
@@ -58,5 +63,5 @@
 		{
 			GC.SuppressFinalize(this);
 		}
-	}
+    }
 }

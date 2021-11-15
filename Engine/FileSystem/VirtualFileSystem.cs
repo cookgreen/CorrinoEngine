@@ -40,6 +40,16 @@
 			return files;
 		}
 
+		public IEnumerable<string> GetFilesByExtension(string extension = "")
+		{
+			var files = new List<string>();
+
+			foreach (var fileSystem in this.fileSystems)
+				files.AddRange(fileSystem.GetFilesByExtension(extension));
+
+			return files;
+		}
+
 		public void Delete(string path)
 		{
 			(this.fileSystems.FirstOrDefault(fileSystem => fileSystem.Exists(path)) as IWritableFileSystem)?.Delete(path);
@@ -55,5 +65,5 @@
 			this.fileSystems.ForEach(fileSystem => fileSystem.Dispose());
 			GC.SuppressFinalize(this);
 		}
-	}
+    }
 }

@@ -1,6 +1,7 @@
 using CorrinoEngine.Assets;
 using CorrinoEngine.Cameras;
 using CorrinoEngine.FileSystem;
+using CorrinoEngine.Forms;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Mods;
 using CorrinoEngine.Renderer;
@@ -54,7 +55,7 @@ namespace CorrinoEngine
 
 			loadAssest(currentMod);
 
-			WindowState = WindowState.Fullscreen;
+			WindowState = WindowState.Maximized;
 
 			SceneManager.Instance.StartNewScene("InnerGame", this);
 		}
@@ -109,7 +110,16 @@ namespace CorrinoEngine
 		{
 			worldRenderer.UpdateFrame(args);
 
-			//if (this.KeyboardState.IsKeyPressed(Keys.Enter) || this.model == null)
+			if (this.KeyboardState.IsKeyPressed(Keys.Enter))
+			{
+				frmModelSelector frmModelSelector = new frmModelSelector(assetManager);
+				if(frmModelSelector.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+				{
+					worldRenderer.UnloadCurrentModel();
+
+					LoadXbf(frmModelSelector.SelectedModel);
+                }
+			}
 			//	this.LoadXbf(this.models[this.model == null ? 0 : (this.models.IndexOf(this.model) + 1) % this.models.Count]);
 		}
 

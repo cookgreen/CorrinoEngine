@@ -38,10 +38,16 @@ namespace CorrinoEngine.FileSystem
 				.Select(rfhEntry => rfhEntry.Path.Replace('\\', '/').Trim('/'));
 		}
 
+		public IEnumerable<string> GetFilesByExtension(string extension = "")
+		{
+			return this.rfh.Files.Where(rfhEntry=>Path.GetExtension(rfhEntry.Path) == "."+extension)
+				.Select(rfhEntry => rfhEntry.Path.Replace('\\', '/').Trim('/'));
+		}
+
 		public void Dispose()
 		{
 			this.rfh.Dispose();
 			GC.SuppressFinalize(this);
 		}
-	}
+    }
 }
