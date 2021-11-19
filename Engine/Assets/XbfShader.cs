@@ -1,9 +1,12 @@
-﻿namespace CorrinoEngine.Assets
+﻿using CorrinoEngine;
+using CorrinoEngine.FileSystem;
+using CorrinoEngine.Graphics.Shaders;
+using OpenTK.Graphics.OpenGL4;
+using OpenTK.Mathematics;
+using System;
+
+namespace CorrinoEngine.Assets
 {
-	using FileSystem;
-	using Graphics.Shaders;
-	using OpenTK.Graphics.OpenGL4;
-	using OpenTK.Mathematics;
 
 	public class XbfShader : Shader<XbfShader.XbfShaderParameters>
 	{
@@ -90,7 +93,18 @@
 		{
 			base.Bind(model, view, projection, parameters);
 
-			var normal = Matrix4.Transpose(Matrix4.Invert(view * model));
+			Matrix4 normal;
+			Matrix4 mat = view * model;
+			try
+			{
+				normal = Matrix4.Transpose(Matrix4.Invert(mat));
+			}
+			catch (InvalidOperationException ex) 
+			when (ex.Message == "Matrix is singular and cannot be inverted.")
+			{
+				normal = Matrix4.Transpose(mat);
+			}
+
 			GL.UniformMatrix4(this.normal, false, ref normal);
 			GL.Uniform3(this.light, Vector3.TransformVector(-Vector3.UnitZ, view));
 			GL.BindTexture(TextureTarget.Texture2D, parameters.Texture);
