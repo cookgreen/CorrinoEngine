@@ -29,6 +29,7 @@ namespace CorrinoEngine
 		private Argument argument;
 		private WorldRenderer worldRenderer;
 		private TerrainRenderer terrainRenderer;
+		private string currentModel;
 
 		public GameApp(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
@@ -112,7 +113,7 @@ namespace CorrinoEngine
 
 			if (this.KeyboardState.IsKeyPressed(Keys.Enter))
 			{
-				frmModelSelector frmModelSelector = new frmModelSelector(assetManager);
+				frmModelSelector frmModelSelector = new frmModelSelector(assetManager, currentModel);
 				if(frmModelSelector.ShowDialog() == System.Windows.Forms.DialogResult.OK)
 				{
 					worldRenderer.UnloadCurrentModel();
@@ -125,6 +126,8 @@ namespace CorrinoEngine
 
 		private void LoadXbf(string model)
 		{
+			currentModel = model;
+
 			var mesh = assetManager.Load<XbfMesh>(this, model);
 
 			var meshInstance = new MeshInstance(mesh) {Speed = 20};

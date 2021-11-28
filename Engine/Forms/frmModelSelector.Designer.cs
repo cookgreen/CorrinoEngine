@@ -32,6 +32,7 @@ namespace CorrinoEngine.Forms
             this.xbfModelList = new System.Windows.Forms.ListBox();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnOK = new System.Windows.Forms.Button();
+            this.btnSaveListAs = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // xbfModelList
@@ -65,11 +66,24 @@ namespace CorrinoEngine.Forms
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOK_Click);
             // 
+            // btnSaveListAs
+            // 
+            this.btnSaveListAs.Enabled = false;
+            this.btnSaveListAs.Location = new System.Drawing.Point(13, 498);
+            this.btnSaveListAs.Name = "btnSaveListAs";
+            this.btnSaveListAs.Size = new System.Drawing.Size(126, 29);
+            this.btnSaveListAs.TabIndex = 4;
+            this.btnSaveListAs.Text = "Save As";
+            this.btnSaveListAs.UseVisualStyleBackColor = true;
+            this.btnSaveListAs.Visible = false;
+            this.btnSaveListAs.Click += new System.EventHandler(this.btnSaveListAs_Click);
+            // 
             // frmModelSelector
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(532, 537);
+            this.Controls.Add(this.btnSaveListAs);
             this.Controls.Add(this.btnOK);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.xbfModelList);
@@ -89,5 +103,6 @@ namespace CorrinoEngine.Forms
         private System.Windows.Forms.ListBox xbfModelList;
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Button btnOK;
+        private System.Windows.Forms.Button btnSaveListAs;
     }
 }
