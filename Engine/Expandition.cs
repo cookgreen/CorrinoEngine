@@ -1,4 +1,5 @@
-﻿using System;
+﻿using CorrinoEngine.Translation;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -46,5 +47,33 @@ namespace CorrinoEngine
 			}
 			return str.Substring(startStr.Length, str.Length - len);
 		}
+
+		public static bool isTransableString(this string str)
+        {
+			return str.StartsWith("%{") && str.Where(o => o == '}').Count() == 1;
+        }
+
+		public static TranslableString ToTransableString(this string str)
+        {
+			if(str.isTransableString())
+            {
+				string defaultStr;
+				string[] tokens = str.Split('}');
+				if (tokens.Length == 1)
+				{
+					defaultStr = string.Empty;
+				}
+                else
+                {
+					defaultStr = tokens[1];
+                }
+				TranslableString translableString = new TranslableString(tokens[0].Substring(2), defaultStr);
+				return translableString;
+            }
+            else
+            {
+				throw new Exception("Not a transable string!");
+            }
+        }
 	}
 }
