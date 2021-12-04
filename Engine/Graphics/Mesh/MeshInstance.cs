@@ -40,5 +40,12 @@ namespace CorrinoEngine.Graphics.Mesh
 		{
 			this.mesh.Draw(camera, this.World, this.frame);
 		}
+
+		// if startFrame = endFrame => Static Model
+		// if startFrame -> endFrame => Model Animation loop play
+		public void Draw(Camera camera, float startFrame, float endFrame)
+		{
+			this.mesh.Draw(camera, this.World, startFrame, endFrame);
+		}
 	}
 }

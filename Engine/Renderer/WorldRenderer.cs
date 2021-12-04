@@ -83,7 +83,6 @@ namespace CorrinoEngine.Renderer
         {
             foreach(var meshInstance in meshInstances)
             {
-                meshInstance.World *= Matrix4.CreateRotationY((float)args.Time / 5);
                 meshInstance.Update((float)args.Time);
             }
             foreach (var actor in actors)
