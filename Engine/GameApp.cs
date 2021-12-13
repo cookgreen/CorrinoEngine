@@ -4,6 +4,7 @@ using CorrinoEngine.FileSystem;
 using CorrinoEngine.Forms;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Mods;
+using CorrinoEngine.Orders;
 using CorrinoEngine.Renderer;
 using CorrinoEngine.Scenes;
 using CorrinoEngine.UI;
@@ -24,12 +25,15 @@ namespace CorrinoEngine
 {
 	public class GameApp : GameWindow
 	{
+		private bool isEditMode;
 		private AssetManager assetManager;
 		private Camera camera;
+		private CameraController camController;
 		private Argument argument;
 		private WorldRenderer worldRenderer;
 		private TerrainRenderer terrainRenderer;
 		private string currentModel;
+		private OrderManager orderManager;
 
 		public GameApp(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
@@ -93,8 +97,33 @@ namespace CorrinoEngine
 					Direction = new Vector3(0, -1, 1).Normalized(),
 					Position = new Vector3(0, 1, -1) * 128
 				};
+
+				camController = new RTSCameraController(camera);
+				camController.InjectKeyborardState(KeyboardState);
+				camController.InjectMouseState(MouseState);
+
+				orderManager = new OrderManager(camera, KeyboardState, MouseState);
+                orderManager.OrderExecuted += OrderManager_OrderExecuted;
 			}
 		}
+
+        private void OrderManager_OrderExecuted(string arg1, object arg2)
+        {
+            switch (arg1)
+            {
+				case "PlaceBuilding":
+
+					object[] newArgs = arg2 as object[];
+					Vector3? modelPos = newArgs[0] as Vector3?;
+					string modelPlace = newArgs[1].ToString();
+
+					LoadXbf(modelPlace, modelPos.Value);
+
+					break;
+				default:
+					break;
+            }
+        }
 
         protected override void OnResize(ResizeEventArgs args)
 		{
@@ -109,9 +138,13 @@ namespace CorrinoEngine
 
 		protected override void OnUpdateFrame(FrameEventArgs args)
 		{
+			camController.Update();
+
+			orderManager.Update();
+
 			worldRenderer.UpdateFrame(args);
 
-			if (this.KeyboardState.IsKeyPressed(Keys.Enter))
+			if (/*isEditMode && */this.KeyboardState.IsKeyPressed(Keys.Enter))
 			{
 				frmModelSelector frmModelSelector = new frmModelSelector(assetManager, currentModel);
 				if(frmModelSelector.ShowDialog() == System.Windows.Forms.DialogResult.OK)
@@ -121,7 +154,18 @@ namespace CorrinoEngine
 					LoadXbf(frmModelSelector.SelectedModel);
                 }
 			}
-			//	this.LoadXbf(this.models[this.model == null ? 0 : (this.models.IndexOf(this.model) + 1) % this.models.Count]);
+		}
+
+		private void LoadXbf(string model, Vector3 modelPos)
+		{
+			currentModel = model;
+
+			var mesh = assetManager.Load<XbfMesh>(this, model);
+
+			var meshInstance = new MeshInstance(mesh) { Speed = 20 };
+			meshInstance.World = Matrix4.CreateTranslation(modelPos);
+
+			worldRenderer.RenderModel(meshInstance);
 		}
 
 		private void LoadXbf(string model)
