@@ -40,7 +40,7 @@ namespace CorrinoEngine.FileFormats
 						currentNode.Name = tokens[0].Replace("\t", null);
 						if (tokens.Length > 1)
 						{
-							currentNode.Value = tokens[1];
+							currentNode.Value = tokens[1].Trim();
 						}
 						Nodes.Add(currentNode);
 					}
@@ -57,7 +57,7 @@ namespace CorrinoEngine.FileFormats
 							subNode.Name = tokens[0].Replace("\t", null); ;
 							if (tokens.Length > 1)
 							{
-								subNode.Value = tokens[1];
+								subNode.Value = tokens[1].Trim();
 							}
 							subNode.ParentNode = currentNode;
 							currentNode.ChildNodes.Add(subNode);
@@ -70,7 +70,7 @@ namespace CorrinoEngine.FileFormats
 							yamlNode.Name = tokens[0].Replace("\t", null);
 							if (tokens.Length > 1)
 							{
-								yamlNode.Value = tokens[1];
+								yamlNode.Value = tokens[1].Trim();
 							}
 							int cunt = line.StartsWithCharCount('\t');
 							if (count == lastCount)

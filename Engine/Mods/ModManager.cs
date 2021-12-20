@@ -52,9 +52,9 @@ namespace CorrinoEngine.Mods
                 string modYamlFile = Path.Combine(folder.FullName, "mod.yaml");
                 if (File.Exists(modYamlFile))
                 {
-                    ModManifest modManifest = new ModManifest();
-                    modManifest.Parse(modYamlFile);
-                    ModData modData = new ModData(folder.Name, modFullPath);
+                    ModData modData = new ModData(folder.Name, folder.FullName);
+                    ModManifest modManifest = new ModManifest(modData);
+                    modManifest.Load(modYamlFile);
                     modData.Manifest = modManifest;
                     mods[folder.Name] = modData;
                 }

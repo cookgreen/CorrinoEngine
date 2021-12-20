@@ -1,2 +1,12 @@
 atreides-barrack:
-    idle: 
+	idle: Buildings/at_barracks_H0.xbf
+	damage1: Buildings/at_barracks_h1.xbf
+	damage2: Buildings/at_barracks_h2.xbf
+	destroy: Buildings/at_barracks_h3.xbf
+	shadow: Buildings/at_barracks_L0.xbf
+	shadow-damage1: Buildings/at_barracks_L1.xbf
+	shadow-damage2: Buildings/at_barracks_L1.xbf
+	light: Buildings/at_barracks_M0.xbf
+	light-damage1: Buildings/at_barracks_M1.xbf
+	light-damage2: Buildings/at_barracks_M2.xbf
+

@@ -1,4 +1,5 @@
 ﻿using CorrinoEngine.Cameras;
+using CorrinoEngine.Game;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
@@ -10,16 +11,18 @@ namespace CorrinoEngine.Orders
 {
     public class OrderManager
     {
-        private Stack<Order> orders;
+        private World world;
+        private Stack<Order> historyOrders;
         private KeyboardState ks;
         private MouseState ms;
         private Camera cam;
 
         public event Action<string, object> OrderExecuted;
 
-        public OrderManager(Camera cam, KeyboardState ks, MouseState ms)
+        public OrderManager(World world, Camera cam, KeyboardState ks, MouseState ms)
         {
-            orders = new Stack<Order>();
+            historyOrders = new Stack<Order>();
+            this.world = world;
             this.ks = ks;
             this.ms = ms;
             this.cam = cam;
@@ -31,8 +34,8 @@ namespace CorrinoEngine.Orders
             {
                 Order newOrder = new PlaceBuildingOrder(cam, ks, ms);
                 newOrder.OrderExecuted += NewOrder_OrderExecuted;
-                newOrder.Execute("Buildings/AK_IN_hungfigure2_H0.xbf");
-                orders.Push(newOrder);
+                newOrder.Execute("atreides-barrack");
+                historyOrders.Push(newOrder);
             }
         }
 

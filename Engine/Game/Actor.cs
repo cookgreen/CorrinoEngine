@@ -14,10 +14,10 @@ namespace CorrinoEngine.Game
     {
         private IPathFind pathFinder;
         private MeshInstance meshInstance;
-        private Dictionary<string, string> actorProperties;
+        private Dictionary<string, object> actorProperties;
         private VPos location;
 
-        public Actor(MeshInstance meshInstance, Dictionary<string, string> actorProperties)
+        public Actor(MeshInstance meshInstance, Dictionary<string, object> actorProperties)
         {
             pathFinder = new AStarPathFind();
             this.actorProperties = actorProperties;

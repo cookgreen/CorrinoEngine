@@ -2,6 +2,7 @@ using CorrinoEngine.Assets;
 using CorrinoEngine.Cameras;
 using CorrinoEngine.FileSystem;
 using CorrinoEngine.Forms;
+using CorrinoEngine.Game;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Mods;
 using CorrinoEngine.Orders;
@@ -25,6 +26,7 @@ namespace CorrinoEngine
 {
 	public class GameApp : GameWindow
 	{
+		private World world;
 		private bool isEditMode;
 		private AssetManager assetManager;
 		private Camera camera;
@@ -102,10 +104,18 @@ namespace CorrinoEngine
 				camController.InjectKeyborardState(KeyboardState);
 				camController.InjectMouseState(MouseState);
 
-				orderManager = new OrderManager(camera, KeyboardState, MouseState);
-                orderManager.OrderExecuted += OrderManager_OrderExecuted;
+				world = new World(assetManager, currentMod);
+                world.CreateActorFinished += World_CreateActorFinished;
+
+				orderManager = new OrderManager(world, camera, KeyboardState, MouseState);
+				orderManager.OrderExecuted += OrderManager_OrderExecuted;
 			}
 		}
+
+        private void World_CreateActorFinished(Actor actor)
+        {
+			worldRenderer.AppendActor(actor);
+        }
 
         private void OrderManager_OrderExecuted(string arg1, object arg2)
         {
@@ -114,10 +124,10 @@ namespace CorrinoEngine
 				case "PlaceBuilding":
 
 					object[] newArgs = arg2 as object[];
-					Vector3? modelPos = newArgs[0] as Vector3?;
-					string modelPlace = newArgs[1].ToString();
+					Vector3? actorPos = newArgs[0] as Vector3?;
+					string actorName = newArgs[1].ToString();
 
-					LoadXbf(modelPlace, modelPos.Value);
+					world.CreateActor(actorName);
 
 					break;
 				default:
