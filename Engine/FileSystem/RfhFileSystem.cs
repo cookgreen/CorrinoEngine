@@ -45,7 +45,7 @@ namespace CorrinoEngine.FileSystem
 
 		public IEnumerable<string> GetFilesByExtension(string extension = "")
 		{
-			return this.rfh.Files.Where(rfhEntry=>Path.GetExtension(rfhEntry.Path) == "."+extension)
+			return this.rfh.Files.Where(rfhEntry=>Path.GetExtension(rfhEntry.Path).ToLower() == "."+extension)
 				.Select(rfhEntry => rfhEntry.Path.Replace('\\', '/').Trim('/'));
 		}
 

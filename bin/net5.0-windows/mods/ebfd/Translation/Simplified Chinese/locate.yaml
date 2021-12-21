@@ -2,5 +2,9 @@ Locate: Simplified Chinese
 	str_faction_name_atreides: 亚崔迪
 	str_faction_name_harkonnen: 哈肯尼
 	str_faction_name_ordors: 奥多斯
+	str_building_atreides_conyard_name: 亚崔迪建造场
+	str_building_atreides_conyard_desc: 提供亚崔迪建筑的权限
 	str_building_atreides_barrack_name: 亚崔迪兵营
 	str_building_atreides_barrack_desc: 用来训练步兵
+	str_unit_atreides_infantry_name: 亚崔迪步枪兵
+	str_unit_atreides_infantry_desc: 亚崔迪的基础步枪兵，可以提供一些基础火力

@@ -1,0 +1,5 @@
+atreides-infantry:
+	Name: %{str_unit_atreides_infantry_name}Atreides Infantry
+	Description: %{str_unit_atreides_infantry_desc}Basic Atreides Infantry unit which can provide the basic firepower
+	Prerequisites: atreides-barrack
+	Cost: 100

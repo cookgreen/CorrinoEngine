@@ -2,4 +2,7 @@ Locate: English
 	str_faction_name_atreides: Atreides
 	str_faction_name_harkonnen: Harkonnen
 	str_faction_name_ordors: Ordos
-	str_building_name_barrack: Barrack
+	str_building_atreides_conyard_name: Atreides Construction Yard
+	str_building_atreides_conyard_desc: Atreides Construction Yard provides all atreides buildings
+	str_building_atreides_barrack_name: Atreides Barrack
+	str_building_atreides_barrack_desc: Atreides Barrack will train the Atreides infantries
