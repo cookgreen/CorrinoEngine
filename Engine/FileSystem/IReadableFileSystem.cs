@@ -8,6 +8,7 @@
 	{
 		public bool Exists(string path);
 		public Stream Read(string path);
+		public IEnumerable<string> GetAllFiles();
 		public IEnumerable<string> GetFiles(string path = "");
 		public IEnumerable<string> GetFilesByExtension(string extension = "");
 	}

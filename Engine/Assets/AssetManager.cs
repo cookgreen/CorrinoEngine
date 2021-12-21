@@ -18,6 +18,11 @@ namespace CorrinoEngine.Assets
 			this.fileSystem = fileSystem;
 		}
 
+		public IEnumerable<string> GetAllFiles()
+		{
+			return fileSystem.GetAllFiles();
+		}
+
 		public IEnumerable<string> GetFiles(string path)
 		{
 			return fileSystem.GetFiles(path);

@@ -30,6 +30,11 @@ namespace CorrinoEngine.FileSystem
 			return entry != null ? new MemoryStream(entry.Read()) : null;
 		}
 
+		public IEnumerable<string> GetAllFiles()
+		{
+			return this.rfh.Files.Select(rfhEntry => rfhEntry.Path.Replace('\\', '/').Trim('/'));
+		}
+
 		public IEnumerable<string> GetFiles(string path = "")
 		{
 			var rfhPath = path.Replace('/', '\\');

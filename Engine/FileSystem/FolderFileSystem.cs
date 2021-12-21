@@ -31,6 +31,12 @@
 			}
 		}
 
+		public IEnumerable<string> GetAllFiles()
+		{
+			return Directory.GetFiles(this.path, "*", SearchOption.AllDirectories)
+				.Select(file => file.Substring(this.path.Length).Replace('\\', '/').Trim('/'));
+		}
+
 		public IEnumerable<string> GetFiles(string path)
 		{
 			return Directory.GetFiles(Path.Combine(this.path, path), "*", SearchOption.AllDirectories)

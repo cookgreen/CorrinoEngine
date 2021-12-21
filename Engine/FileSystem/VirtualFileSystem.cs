@@ -30,6 +30,16 @@
 			return this.fileSystems.FirstOrDefault(fileSystem => fileSystem.Exists(path))?.Read(path);
 		}
 
+		public IEnumerable<string> GetAllFiles()
+		{
+			var files = new List<string>();
+
+			foreach (var fileSystem in this.fileSystems)
+				files.AddRange(fileSystem.GetAllFiles());
+
+			return files;
+		}
+
 		public IEnumerable<string> GetFiles(string path = "")
 		{
 			var files = new List<string>();
