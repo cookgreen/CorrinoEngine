@@ -1,0 +1,3 @@
+ordos-conyard:
+	Name: %{str_building_ordos_conyard_name}Ordos Construction Yard
+	Description: %{str_building_ordos_conyard_desc}Ordos Construction Yard provides all ordos buildings

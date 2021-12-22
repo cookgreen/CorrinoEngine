@@ -13,6 +13,7 @@ Settings:
 	Settings/Harkonnen-Units.yaml
 	Settings/Ordos-Buildings.yaml
 	Settings/Ordos-Units.yaml
+	Settings/World.yaml
     
 Anims:
 	Anims/Atreides-Buildings.yaml
@@ -21,6 +22,7 @@ Anims:
 	Anims/Harkonnen-Units.yaml
 	Anims/Ordos-Buildings.yaml
 	Anims/Ordos-Units.yaml
+	Anims/World.yaml
     
 Translate:
 	Translation/

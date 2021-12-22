@@ -30,5 +30,10 @@ namespace CorrinoEngine.Fields
         {
             actorProperties[propertyName] = propertyVal;
         }
+
+        public IEnumerable<KeyValuePair<string, object>> GetFields(string propertyName)
+        {
+            return actorProperties.Where(o => o.Key.Contains(propertyName));
+        }
     }
 }

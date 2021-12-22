@@ -1,4 +1,5 @@
 ﻿using CorrinoEngine.Cameras;
+using CorrinoEngine.Fields;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.PathFind;
 using OpenTK.Windowing.Common;
@@ -12,17 +13,29 @@ namespace CorrinoEngine.Game
 {
     public class Actor
     {
+        private ActorData actorData;
         private IPathFind pathFinder;
         private MeshInstance meshInstance;
-        private Dictionary<string, object> actorProperties;
         private VPos location;
 
-        public Actor(MeshInstance meshInstance, Dictionary<string, object> actorProperties)
+        public ActorData ActorData
         {
-            pathFinder = new AStarPathFind();
-            this.actorProperties = actorProperties;
+            get { return actorData; }
+        }
+
+        public Actor(ActorData actorData)
+        {
+            this.actorData = actorData;
+        }
+
+        public IEnumerable<KeyValuePair<string, object>> GetFields(string fieldName)
+        {
+            return actorData.DataField.GetFields(fieldName);
+        }
+
+        public void Spawn(MeshInstance meshInstance)
+        {
             this.meshInstance = meshInstance;
-            location = new VPos();
         }
 
         public void Draw(FrameEventArgs args, Camera camera)

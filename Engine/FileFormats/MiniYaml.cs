@@ -46,53 +46,66 @@ namespace CorrinoEngine.FileFormats
 					}
 					else
 					{
-						if (count == 1)
+						int cunt = line.StartsWithCharCount('\t');
+
+						MiniYamlNode yamlNode = new MiniYamlNode();
+						var tokens = line.Split(':');
+						yamlNode.Name = tokens[0].Replace("\t", null);
+						if (tokens.Length > 1)
 						{
-							if (currentNode.ParentNode != null)
-							{
-								currentNode = currentNode.ParentNode;
-							}
-							var subNode = new MiniYamlNode();
-							var tokens = line.Split(':');
-							subNode.Name = tokens[0].Replace("\t", null); ;
-							if (tokens.Length > 1)
-							{
-								subNode.Value = tokens[1].Trim();
-							}
-							subNode.ParentNode = currentNode;
-							currentNode.ChildNodes.Add(subNode);
-							currentNode = subNode;
+							yamlNode.Value = tokens[1].Trim();
 						}
-						else
+						if (cunt == lastCount)
 						{
-							MiniYamlNode yamlNode = new MiniYamlNode();
-							var tokens = line.Split(':');
-							yamlNode.Name = tokens[0].Replace("\t", null);
-							if (tokens.Length > 1)
-							{
-								yamlNode.Value = tokens[1].Trim();
-							}
-							int cunt = line.StartsWithCharCount('\t');
-							if (count == lastCount)
-							{
-								yamlNode.ParentNode = currentNode.ParentNode;
-								currentNode.ParentNode.ChildNodes.Add(yamlNode);
-							}
-							else if (cunt == lastCount + 1)
-							{
-								yamlNode.ParentNode = currentNode;
-								currentNode.ChildNodes.Add(yamlNode);
-							}
-							else if (cunt == lastCount - 1)
-							{
-								yamlNode.ParentNode = currentNode.ParentNode.ParentNode;
-								currentNode.ParentNode.ParentNode.ChildNodes.Add(yamlNode);
-							}
-							currentNode = yamlNode;
+							yamlNode.ParentNode = currentNode.ParentNode;
+							currentNode.ParentNode.ChildNodes.Add(yamlNode);
 						}
+						else if (cunt == lastCount + 1)
+						{
+							yamlNode.ParentNode = currentNode;
+							currentNode.ChildNodes.Add(yamlNode);
+						}
+						else if (cunt == lastCount - 1)
+						{
+							yamlNode.ParentNode = currentNode.ParentNode.ParentNode;
+							currentNode.ParentNode.ParentNode.ChildNodes.Add(yamlNode);
+						}
+						else if (cunt < lastCount)
+						{
+							if (cunt - 1 == 0)
+							{
+								var lastRootNode = Nodes.Last();
+								yamlNode.ParentNode = lastRootNode;
+								lastRootNode.ChildNodes.Add(yamlNode);
+							}
+                            else
+                            {
+								var parentNode = getParentNode(currentNode, lastCount - 1);
+								yamlNode.ParentNode = parentNode;
+								parentNode.ChildNodes.Add(yamlNode);
+                            }
+						}
+						currentNode = yamlNode;
 					}
 					lastCount = count;
 				}
+			}
+		}
+
+        private MiniYamlNode getParentNode(MiniYamlNode currentNode, int upTimes)
+        {
+			return getSubParentNode(currentNode, upTimes);
+		}
+
+		private MiniYamlNode getSubParentNode(MiniYamlNode currentNode, int upTimes)
+		{
+			if (upTimes == 0)
+			{
+				return currentNode;
+			}
+			else
+			{
+				return getSubParentNode(currentNode.ParentNode, upTimes - 1);
 			}
 		}
 

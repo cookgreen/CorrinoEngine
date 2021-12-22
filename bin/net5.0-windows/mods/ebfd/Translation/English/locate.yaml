@@ -6,3 +6,9 @@ Locate: English
 	str_building_atreides_conyard_desc: Atreides Construction Yard provides all atreides buildings
 	str_building_atreides_barrack_name: Atreides Barrack
 	str_building_atreides_barrack_desc: Atreides Barrack will train the Atreides infantries
+	str_unit_atreides_infantry_name: Atreides Infantry
+	str_unit_atreides_infantry_desc: Basic infantry of Atreides, can provide the basic firepower
+	str_building_harkonnen_conyard_name: Harkonnen Construction Yard
+	str_building_harkonnen_conyard_desc: Harkonnen Construction Yard provides all harkonnen buildings
+	str_building_ordos_conyard_name: Ordos Construction Yard
+	str_building_ordos_conyard_desc: Ordos Construction Yard provides all ordos buildings

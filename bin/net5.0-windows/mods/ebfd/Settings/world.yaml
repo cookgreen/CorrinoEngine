@@ -1,0 +1,13 @@
+World:
+	Faction@1: 
+		ID: atreides
+		Name: %{str_faction_name_atreides}Atreides
+		StartActor: atreides-conyard
+	Faction@2: 
+		ID: harkonnen
+		Name: %{str_faction_name_harkonnen}Harkonnen
+		StartActor: harkonnen-conyard
+	Faction@3: 
+		ID: ordos
+		Name: %{str_faction_name_ordors}Ordos
+		StartActor: ordos-conyard

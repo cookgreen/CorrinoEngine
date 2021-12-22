@@ -1,0 +1,11 @@
+ordos-conyard:
+	idle: Buildings/OR_conyard_H0.XbF
+	damage1: Buildings/OR_conyard_H1.XBF
+	damage2: Buildings/OR_conyard_H2.XBF
+	destroy: Buildings/OR_conyard_H3.XBF
+	shadow: Buildings/OR_conyard_L0.XbF
+	shadow-damage1: Buildings/OR_Conyard_L1.xbf
+	shadow-damage2: Buildings/OR_conyard_L2.XBF
+	light: Buildings/OR_conyard_M0.XbF
+	light-damage1: Buildings/OR_Conyard_M1.xbf
+	light-damage2: Buildings/OR_Conyard_M2.xbf

@@ -1,0 +1,3 @@
+harkonnen-conyard:
+	Name: %{str_building_harkonnen_conyard_name}Harkonnen Construction Yard
+	Description: %{str_building_harkonnen_conyard_desc}Harkonnen Construction Yard provides all harkonnen buildings
