@@ -3,7 +3,8 @@ namespace CorrinoEngine.Assets
 	using FileSystem;
 	using System;
 	using System.Collections.Generic;
-	using System.Linq;
+    using System.IO;
+    using System.Linq;
 
 	public class AssetManager
 	{
@@ -83,5 +84,10 @@ namespace CorrinoEngine.Assets
 			if (asset is IDisposable disposable)
 				disposable.Dispose();
 		}
-	}
+
+        public Stream Read(string path)
+        {
+			return fileSystem.Read(path);
+        }
+    }
 }

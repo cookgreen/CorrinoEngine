@@ -61,5 +61,38 @@ namespace CorrinoEngine.Forms
         {
             Close();
         }
+
+        private void btnExtract_Click(object sender, EventArgs e)
+        {
+            SaveFileDialog dialog = new SaveFileDialog();
+            dialog.FileName = fileList.SelectedItem.ToString();
+            if(dialog.ShowDialog() == DialogResult.OK)
+            {
+                string outputFullPath = dialog.FileName;
+                var ms = assetManager.Read(fileList.SelectedItem.ToString());
+
+                using (FileStream file = new FileStream(outputFullPath, FileMode.Create, FileAccess.Write))
+                {
+                    byte[] bytes = new byte[ms.Length];
+                    ms.Read(bytes, 0, (int)ms.Length);
+                    file.Write(bytes, 0, bytes.Length);
+                    ms.Close();
+                }
+
+                MessageBox.Show("Success!");
+            }
+        }
+
+        private void fileList_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (fileList.SelectedIndex > -1)
+            {
+                btnExtract.Enabled = true;
+            }
+            else
+            {
+                btnExtract.Enabled = false;
+            }
+        }
     }
 }

@@ -164,6 +164,12 @@ namespace CorrinoEngine
 					LoadXbf(frmModelSelector.SelectedModel);
                 }
 			}
+
+			if (KeyboardState.IsKeyPressed(Keys.L))
+			{
+				frmRFHRFDFileListViewer fileListViewer = new frmRFHRFDFileListViewer(assetManager);
+				fileListViewer.ShowDialog();
+			}
 		}
 
 		private void LoadXbf(string model, Vector3 modelPos)
