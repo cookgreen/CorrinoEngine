@@ -20,7 +20,7 @@ CorrinoeEngine is an open-source re-implementation of the Emperor : Battle for D
 OpenTK  
 
 ## Credit  
-IceReaper (Andre Mohren)  
+ebfd-re - IceReaper (Andre Mohren)  
 
 ## License
 GNU GPLv3  
