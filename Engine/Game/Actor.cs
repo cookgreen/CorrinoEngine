@@ -14,9 +14,7 @@ namespace CorrinoEngine.Game
     public class Actor
     {
         private ActorData actorData;
-        private IPathFind pathFinder;
         private MeshInstance meshInstance;
-        private VPos location;
 
         public ActorData ActorData
         {

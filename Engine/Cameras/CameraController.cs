@@ -30,7 +30,7 @@ namespace CorrinoEngine.Cameras
 
         public virtual void Update()
         {
-
+            camera.Update();
         }
     }
 }

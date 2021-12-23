@@ -1,11 +1,12 @@
 namespace CorrinoEngine.Graphics.Mesh
 {
 	using Cameras;
-	using OpenTK.Mathematics;
+    using CorrinoEngine.Game;
+    using OpenTK.Mathematics;
 	using System;
 	using System.Linq;
 
-	public class MeshInstance
+	public class MeshInstance : IRenderable
 	{
 		private readonly Mesh mesh;
 		private readonly float totalFrames;

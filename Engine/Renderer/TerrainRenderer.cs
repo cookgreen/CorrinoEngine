@@ -13,11 +13,9 @@ namespace CorrinoEngine.Renderer
     public class TerrainRenderer
     {
         private Terrain terrain;
-        private GameWindow wnd;
 
-        public TerrainRenderer(GameWindow wnd)
+        public TerrainRenderer()
         {
-            this.wnd = wnd;
         }
 
         public TerrainRenderer(Terrain terrain)

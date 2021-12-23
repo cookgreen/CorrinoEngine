@@ -16,78 +16,31 @@ namespace CorrinoEngine.Renderer
 {
     public class WorldRenderer
     {
-        private List<MeshInstance> meshInstances;
-        private GameWindow wnd;
-        private List<Actor> actors;
-
-
-        private static WorldRenderer instance;
-        public static WorldRenderer Instance
-        {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new WorldRenderer();
-                }
-                return instance;
-            }
-        }
+        private List<IRenderable> renderableObjects;
 
         public WorldRenderer()
         {
-            meshInstances = new List<MeshInstance>();
-            actors = new List<Actor>();
+            renderableObjects = new List<IRenderable>();
         }
 
-        public void Init(GameWindow wnd)
+        public void RenderObject(IRenderable renderableObject)
         {
-            this.wnd = wnd;
+            renderableObjects.Add(renderableObject);
         }
 
-        public void Loaded()
+        public void Render(Camera camera)
         {
-        }
-
-        public void AppendActor(Actor actor)
-        {
-            actors.Add(actor);
-        }
-
-        public void RenderModel(MeshInstance meshInstance)
-        {
-            meshInstances.Add(meshInstance);
-        }
-
-        public void UnloadCurrentModel()
-        {
-            if (meshInstances.Count > 0)
+            foreach(var renderableObject in renderableObjects)
             {
-                meshInstances.RemoveAt(0);
-            }
-        }
-
-        public void RenderFrame(FrameEventArgs args, Camera camera)
-        {
-            foreach (var meshInstance in meshInstances)
-            {
-                meshInstance.Draw(camera);
-            }
-            foreach (var actor in actors)
-            {
-                actor.Draw(args, camera);
+                renderableObject.Draw(camera);
             }
         }
 
         public void UpdateFrame(FrameEventArgs args)
         {
-            foreach(var meshInstance in meshInstances)
+            foreach(var renderableObject in renderableObjects)
             {
-                meshInstance.Update((float)args.Time);
-            }
-            foreach (var actor in actors)
-            {
-                actor.Update(args);
+                renderableObject.Update((float)args.Time);
             }
         }
     }

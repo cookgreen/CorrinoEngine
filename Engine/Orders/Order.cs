@@ -25,7 +25,7 @@ namespace CorrinoEngine.Orders
 
         public virtual void Execute(object args)
         {
-
+            OrderExecuted?.Invoke("Placeholder", null);
         }
     }
 }

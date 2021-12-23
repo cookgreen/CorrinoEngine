@@ -17,6 +17,8 @@ namespace CorrinoEngine.Cameras
 
         public override void Update()
         {
+            base.Update();
+
             if (ks == null || ms == null)
                 return;
 

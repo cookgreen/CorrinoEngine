@@ -1,4 +1,5 @@
-﻿using CorrinoEngine.Scenes.Customs;
+﻿using CorrinoEngine.Game;
+using CorrinoEngine.Scenes.Customs;
 using OpenTK.Windowing.Desktop;
 using System;
 using System.Collections.Generic;
@@ -10,23 +11,12 @@ namespace CorrinoEngine.Scenes
 {
     public class SceneManager
     {
+        private World world;
         private Stack<GameScene> scenes;
 
-        private static SceneManager instance;
-        public static SceneManager Instance
+        public SceneManager(World world)
         {
-            get
-            {
-                if (instance == null)
-                {
-                    instance = new SceneManager();
-                }
-                return instance;
-            }
-        }
-
-        public SceneManager()
-        {
+            this.world = world;
             scenes = new Stack<GameScene>();
         }
 
