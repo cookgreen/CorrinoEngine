@@ -9,6 +9,8 @@ namespace CorrinoEngine.Cameras
 {
     public class RTSCameraController : CameraController
     {
+        private const float CAM_MOVEMENT = 3;
+
         public RTSCameraController(Camera camera) : base(camera)
         {
         }
@@ -20,19 +22,19 @@ namespace CorrinoEngine.Cameras
 
             if(ks.IsKeyDown(Keys.W))
             {
-                camera.Position.Z += 3;
+                camera.Position.Z += CAM_MOVEMENT;
             }
             else if(ks.IsKeyDown(Keys.A))
             {
-                camera.Position.X += 3;
+                camera.Position.X += CAM_MOVEMENT;
             }
             else if (ks.IsKeyDown(Keys.S))
             {
-                camera.Position.Z -= 3;
+                camera.Position.Z -= CAM_MOVEMENT;
             }
             else if (ks.IsKeyDown(Keys.D))
             {
-                camera.Position.X -= 3;
+                camera.Position.X -= CAM_MOVEMENT;
             }
         }
     }
