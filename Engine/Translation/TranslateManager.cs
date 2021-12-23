@@ -34,7 +34,7 @@ namespace CorrinoEngine.Translation
         public void Init(ModData modData)
         {
             //Load all translable texts
-            var transRelativeDir = modData.Manifest.TranslationDirectory;
+            var transRelativeDir = modData.Manifest.TranslationDir;
             var transFullPath = Path.Combine(modData.FullPath, transRelativeDir);
 
             DirectoryInfo di = new DirectoryInfo(transFullPath);

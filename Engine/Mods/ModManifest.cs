@@ -24,7 +24,8 @@ namespace CorrinoEngine.Mods
         public ModManifestAsset Asset { get; set; }
         public List<string> UnitSettings { get; set; }
         public List<string> AnimSettings { get; set; }
-        public string TranslationDirectory { get; set; }
+        public string TranslationDir { get; set; }
+        public string MapsDir { get; set; }
 
         public List<ActorData> ActorDataList
         {
@@ -74,7 +75,11 @@ namespace CorrinoEngine.Mods
                 }
                 else if (node.Name == "Translation")
                 {
-                    TranslationDirectory = node.ChildNodes[0].Name;
+                    TranslationDir = node.ChildNodes[0].Name;
+                }
+                else if (node.Name == "Maps")
+                {
+                    MapsDir = node.ChildNodes[0].Name;
                 }
             }
 
