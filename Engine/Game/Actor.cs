@@ -15,6 +15,7 @@ namespace CorrinoEngine.Game
     {
         private ActorData actorData;
         private MeshInstance meshInstance;
+        private List<Field> fields;
 
         public ActorData ActorData
         {
@@ -24,6 +25,19 @@ namespace CorrinoEngine.Game
         public Actor(ActorData actorData)
         {
             this.actorData = actorData;
+            parseFields();
+        }
+
+        private void parseFields()
+        {
+            fields = new List<Field>();
+            foreach(var property in actorData.DataField.Properties)
+            {
+                if(FieldManager.Instance.TryParse(property.Key))
+                {
+                    fields.Add(FieldManager.Instance.Parse(property.Key));
+                }
+            }
         }
 
         public IEnumerable<KeyValuePair<string, object>> GetFields(string fieldName)
@@ -39,6 +53,17 @@ namespace CorrinoEngine.Game
         public void Draw(FrameEventArgs args, Camera camera)
         {
             meshInstance.Draw(camera);
+        }
+
+        public void OnSelect()
+        {
+            foreach (var field in fields)
+            {
+                if ((field as ISelectable) != null)
+                {
+                    field.Execute();
+                }
+            }
         }
 
         public void Update(FrameEventArgs args)

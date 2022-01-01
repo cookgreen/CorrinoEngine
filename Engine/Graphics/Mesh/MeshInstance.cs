@@ -8,18 +8,43 @@ namespace CorrinoEngine.Graphics.Mesh
 
 	public class MeshInstance : IRenderable
 	{
-		private readonly Mesh mesh;
-		private readonly float totalFrames;
-
-		public Matrix4 World = Matrix4.Identity;
-		public float Speed = 1;
+		private Actor actor;
+		private float boundingRadius;
+		private Vector3 position;
 
 		private float frame;
+		private readonly Mesh mesh;
+		private readonly float totalFrames;
+		private Matrix4 World = Matrix4.Identity;
 
-		public MeshInstance(Mesh mesh)
+		public float Speed = 1;
+
+        public Vector3 Position
+        {
+            get { return position;}
+            set { 
+				position = value;
+				World = Matrix4.CreateTranslation(position);
+			}
+        }
+		public float BoundingRadius
+        {
+            get { return boundingRadius; }
+        }
+
+		public Actor Actor
+        {
+            get { return actor; }
+        }
+
+        public MeshInstance(Actor actor, Mesh mesh)
 		{
+			this.actor = actor;
 			this.mesh = mesh;
+
 			this.totalFrames = this.GetLongestAnimation(this.mesh);
+			position = new Vector3();
+			boundingRadius = 20;
 		}
 
 		private int GetLongestAnimation(Mesh mesh)

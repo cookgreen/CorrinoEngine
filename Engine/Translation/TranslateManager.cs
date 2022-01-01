@@ -73,5 +73,10 @@ namespace CorrinoEngine.Translation
             }
             return null;
         }
+
+        public TranslableString Parse(string stringableTransStr)
+        {
+            return stringableTransStr.ToTransableString();
+        }
     }
 }

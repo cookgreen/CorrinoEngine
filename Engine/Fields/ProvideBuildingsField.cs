@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.Translation;
+﻿using CorrinoEngine.Forms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,23 +7,28 @@ using System.Threading.Tasks;
 
 namespace CorrinoEngine.Fields
 {
-    public class NameField : Field
+    public class ProvideBuildingsField : Field, ISelectable
     {
-        private TranslableString translableString;
+        private object paramArr;
 
         public override string Name
         {
-            get { return "Name"; }
+            get { return "ProvideBuildings"; }
         }
 
         public override object Params
         {
-            get { return new object[] { "TranslatableString" }; }
+            get { return paramArr; }
+        }
+
+        public ProvideBuildingsField()
+        {
+            paramArr = new List<string>();
         }
 
         public override void Execute(params object[] param)
         {
-            translableString = TranslateManager.Instance.Parse((Params as object[])[0].ToString());
+            frmInGameUnitQueue.Instance.Show();
         }
     }
 }

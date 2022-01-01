@@ -37,6 +37,18 @@ namespace CorrinoEngine.Orders
                 newOrder.Execute("atreides-barrack");
                 historyOrders.Push(newOrder);
             }
+            if(ms.WasButtonDown(MouseButton.Button1))
+            {
+                MouseRay mouseRay = new MouseRay((int)ms.X, (int)ms.Y);
+                var queryResult = mouseRay.RayCastQuery();
+                if (queryResult.Count > 0)
+                {
+                    Order newOrder = new SelectUnitOrder(cam, ks, ms);
+                    newOrder.OrderExecuted += NewOrder_OrderExecuted;
+                    newOrder.Execute(queryResult);
+                    historyOrders.Push(newOrder);
+                }
+            }
         }
 
         private void NewOrder_OrderExecuted(string arg1, object arg2)

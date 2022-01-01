@@ -20,16 +20,16 @@ namespace CorrinoEngine.Scenes
             scenes = new Stack<GameScene>();
         }
 
-        public void StartNewScene(string sceneName, GameWindow wnd)
+        public void StartNewScene(string sceneName)
         {
             GameScene newScene = null;
             switch(sceneName)
             {
                 case "MainMenu":
-                    newScene = new MainMenuScene(wnd);
+                    newScene = new MainMenuScene(world);
                     break;
                 case "InnerGame":
-                    newScene = new InnerGameScene(wnd);
+                    newScene = new InnerGameScene(world);
                     break;
             }
 

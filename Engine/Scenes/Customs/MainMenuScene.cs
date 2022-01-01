@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using CorrinoEngine.Game;
 using CorrinoEngine.UI;
 using OpenTK.Windowing.Desktop;
 
@@ -10,7 +11,7 @@ namespace CorrinoEngine.Scenes.Customs
 {
     public class MainMenuScene : GameScene
     {
-        public MainMenuScene(GameWindow wnd) : base(wnd)
+        public MainMenuScene(World world) : base(world)
         {
 
         }

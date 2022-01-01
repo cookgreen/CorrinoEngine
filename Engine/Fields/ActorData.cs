@@ -9,14 +9,14 @@ namespace CorrinoEngine.Fields
     public class ActorData
     {
         private string typeName;
-        private ActorDataField dataField;
+        private ActorPropertyData dataField;
         private ActorAnimSetting animSettings;
 
         public string TypeName { get { return typeName; } }
-        public ActorDataField DataField { get { return dataField; } }
+        public ActorPropertyData DataField { get { return dataField; } }
         public ActorAnimSetting AnimSettings { get { return animSettings; } }
 
-        public ActorData(string typeName, ActorDataField dataField, ActorAnimSetting animSettings)
+        public ActorData(string typeName, ActorPropertyData dataField, ActorAnimSetting animSettings)
         {
             this.typeName = typeName;
             this.dataField = dataField;

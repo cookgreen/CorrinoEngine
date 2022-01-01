@@ -1,4 +1,6 @@
-﻿using OpenTK.Windowing.Desktop;
+﻿using CorrinoEngine.Forms;
+using CorrinoEngine.Game;
+using OpenTK.Windowing.Desktop;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,30 +11,18 @@ namespace CorrinoEngine.Scenes.Customs
 {
     public class InnerGameScene : GameScene
     {
-        private GameApp gameApp;
-
-        public InnerGameScene(GameWindow wnd): base(wnd)
+        public InnerGameScene(World world): base(world)
         {
-            gameApp = (GameApp)wnd;
         }
 
         public override void Start()
         {
-            //GameMap => Terrain
-
-            loadMap();
-
-            createTerrain();
-        }
-
-        private void loadMap()
-        {
-
-        }
-
-        private void createTerrain()
-        {
-
+            frmFactionSelection factionSelectionWin = new frmFactionSelection(world.FactionInfos);
+            if(factionSelectionWin.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            {
+                var startUnit = world.CreateActor(factionSelectionWin.SelectedFactionInfo.StartActor);
+                world.SpawnActor(startUnit);
+            };
         }
 
         public override void Exit()

@@ -31,6 +31,12 @@ namespace CorrinoEngine.Game
         private TerrainRenderer terrainRenderer;
 
         private OrderManager orderManager;
+        private SceneManager sceneManager;
+
+        public List<FactionInfo> FactionInfos
+        {
+            get { return factionInfos; }
+        }
 
         public World(
             AssetManager assetManager, 
@@ -41,6 +47,8 @@ namespace CorrinoEngine.Game
         {
             this.assetManager = assetManager;
             this.modData = modData;
+
+            FieldManager.Instance.Init(modData);
 
             factionInfos = new List<FactionInfo>();
 
@@ -60,6 +68,8 @@ namespace CorrinoEngine.Game
 
             orderManager = new OrderManager(this, camera, ks, ms);
             orderManager.OrderExecuted += OrderManager_OrderExecuted;
+
+            sceneManager = new SceneManager(this);
         }
 
         private void OrderManager_OrderExecuted(string orderName, object orderParams)
@@ -79,6 +89,8 @@ namespace CorrinoEngine.Game
             camera.Size = new Vector2(args.Width, args.Height);
             worldRenderer = new WorldRenderer();
             terrainRenderer = new TerrainRenderer();
+
+            sceneManager.StartNewScene("InnerGame");
         }
 
         public Actor CreateActor(string actorTypeName)
@@ -92,7 +104,7 @@ namespace CorrinoEngine.Game
         public void SpawnActor(Actor actor)
         {
             Mesh mesh = assetManager.Load<XbfMesh>(this, actor.ActorData["idle"].Resource);
-            MeshInstance meshInstance = new MeshInstance(mesh);
+            MeshInstance meshInstance = new MeshInstance(actor, mesh);
 
             actor.Spawn(meshInstance);
             worldRenderer.RenderObject(meshInstance);

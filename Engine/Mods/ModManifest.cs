@@ -88,7 +88,7 @@ namespace CorrinoEngine.Mods
 
         private void parse()
         {
-            List<ActorDataField> actorDataFields = new List<ActorDataField>();
+            List<ActorPropertyData> actorDataFields = new List<ActorPropertyData>();
             List<ActorAnimSetting> actorAnimSettings = new List<ActorAnimSetting>();
 
             foreach(string path in UnitSettings)
@@ -112,13 +112,13 @@ namespace CorrinoEngine.Mods
             }
         }
 
-        private List<ActorDataField> parseActorDataField(string path)
+        private List<ActorPropertyData> parseActorDataField(string path)
         {
-            List<ActorDataField> actorDataFields = new List<ActorDataField>();
+            List<ActorPropertyData> actorDataFields = new List<ActorPropertyData>();
             MiniYaml miniYaml = new MiniYaml(Path.Combine(modData.FullPath, path));
             foreach (var node in miniYaml.Nodes)
             {
-                ActorDataField actorDataField = new ActorDataField(node.Name);
+                ActorPropertyData actorDataField = new ActorPropertyData(node.Name);
                 foreach(var subNode in node.ChildNodes)
                 {
                     if (subNode.ChildNodes.Count > 0)

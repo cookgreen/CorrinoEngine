@@ -16,11 +16,29 @@ namespace CorrinoEngine.Renderer
 {
     public class WorldRenderer
     {
+        private static WorldRenderer instance;
+        public static WorldRenderer Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = new WorldRenderer();
+                }
+                return instance;
+            }
+        }
+
         private List<IRenderable> renderableObjects;
+        public List<IRenderable> RenderableObjects
+        {
+            get { return renderableObjects; }
+        }
 
         public WorldRenderer()
         {
             renderableObjects = new List<IRenderable>();
+            instance = this;
         }
 
         public void RenderObject(IRenderable renderableObject)

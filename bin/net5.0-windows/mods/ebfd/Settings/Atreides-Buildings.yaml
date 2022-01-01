@@ -1,9 +1,11 @@
 atreides-conyard:
 	Name: %{str_building_atreides_conyard_name}Atreides Construction Yard
 	Description: %{str_building_atreides_conyard_desc}Atreides Construction Yard provides all atreides buildings
+	ProvideBuildings: atreides
     
 atreides-barrack:
 	Name: %{str_building_atreides_barrack_name}Atreides Barrack
 	Description: %{str_building_atreides_barrack_desc}Atreides Barrack will train the Atreides infantries
 	Prerequisites: atreides-conyard
+	FactionOwner: atreides
 	Cost: 600

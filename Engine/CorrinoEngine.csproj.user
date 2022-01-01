@@ -4,6 +4,9 @@
     <ShowAllFiles>false</ShowAllFiles>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Update="Forms\frmFactionSelection.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\frmInGameUnitQueue.cs">
       <SubType>Form</SubType>
     </Compile>

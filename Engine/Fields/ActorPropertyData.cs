@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace CorrinoEngine.Fields
 {
-    public class ActorDataField
+    public class ActorPropertyData
     {
         private string actorTypeName;
         private Dictionary<string, object> actorProperties;
@@ -20,7 +20,7 @@ namespace CorrinoEngine.Fields
             get { return actorProperties; }
         }
 
-        public ActorDataField(string actorTypeName)
+        public ActorPropertyData(string actorTypeName)
         {
             this.actorTypeName = actorTypeName;
             actorProperties = new Dictionary<string, object>();
