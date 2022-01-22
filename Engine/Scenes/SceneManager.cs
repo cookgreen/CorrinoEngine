@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.Game;
+﻿using CorrinoEngine.Core;
 using CorrinoEngine.Scenes.Customs;
 using OpenTK.Windowing.Desktop;
 using System;

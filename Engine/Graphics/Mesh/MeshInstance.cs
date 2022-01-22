@@ -1,7 +1,7 @@
 namespace CorrinoEngine.Graphics.Mesh
 {
 	using Cameras;
-    using CorrinoEngine.Game;
+    using CorrinoEngine.Core;
     using OpenTK.Mathematics;
 	using System;
 	using System.Linq;

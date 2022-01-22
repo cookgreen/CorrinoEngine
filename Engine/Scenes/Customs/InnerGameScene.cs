@@ -1,5 +1,5 @@
 ﻿using CorrinoEngine.Forms;
-using CorrinoEngine.Game;
+using CorrinoEngine.Core;
 using OpenTK.Windowing.Desktop;
 using System;
 using System.Collections.Generic;

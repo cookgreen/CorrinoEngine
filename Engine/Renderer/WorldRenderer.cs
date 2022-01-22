@@ -1,5 +1,5 @@
 ﻿using CorrinoEngine.Cameras;
-using CorrinoEngine.Game;
+using CorrinoEngine.Core;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.UI;
 using OpenTK.Graphics.OpenGL4;

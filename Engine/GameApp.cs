@@ -2,7 +2,7 @@ using CorrinoEngine.Assets;
 using CorrinoEngine.Cameras;
 using CorrinoEngine.FileSystem;
 using CorrinoEngine.Forms;
-using CorrinoEngine.Game;
+using CorrinoEngine.Core;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Mods;
 using CorrinoEngine.Orders;
@@ -26,84 +26,35 @@ namespace CorrinoEngine
 {
 	public class GameApp : GameWindow
 	{
-		private World world;
-		private AssetManager assetManager;
-		private Argument argument;
+		private Game game;
 
 		public GameApp(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
 		{
-			this.argument = argument;
-		}
-
-		protected override void OnLoad()
-		{
-			GL.ClearColor(0, 0, 0, 1);
-			GL.Enable(EnableCap.DepthTest);
-			GL.Enable(EnableCap.Blend);
-			GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
-
-			ModData currentMod = null;
-			if (argument.Length > 0 && argument.Contains("Mod"))
-			{
-				currentMod = ModManager.Instance.LoadSpecificMod(argument.GetArgumentParameter("Mod"));
-			}
-			else if (ModManager.Instance.Mods.Count > 0)
-			{
-				currentMod = ModManager.Instance.Mods.ElementAt(0).Value;
-			}
-
-			loadAssest(currentMod);
-			world = new World(assetManager, currentMod, Size, MouseState, KeyboardState);
+			game = new Game(argument);
 			WindowState = WindowState.Maximized;
 		}
 
-        private void loadAssest(ModData currentMod)
+        protected override void OnLoad()
 		{
-			if (currentMod != null)
-			{
-				var fileSystem = new VirtualFileSystem();
-
-				foreach (var asset in currentMod.Manifest.Asset.Assets)
-				{
-					string assetFullPath = Path.Combine(Environment.CurrentDirectory, "Mods/" + currentMod.ID, asset);
-					fileSystem.Add(new FolderFileSystem(assetFullPath));
-
-					foreach (var file in fileSystem.GetFiles())
-					{
-						if (file.EndsWith(".RFH", StringComparison.OrdinalIgnoreCase))
-						{
-							fileSystem.Add(new RfhFileSystem(new Rfh(fileSystem.Read(file)!, fileSystem.Read(file.Substring(0, file.Length - 1) + "D")!)));
-						}
-						else if (file.EndsWith(".BAG", StringComparison.OrdinalIgnoreCase))
-						{
-							fileSystem.Add(new BagFileSystem(new Bag(fileSystem.Read(file)!)));
-						}
-					}
-				}
-
-				assetManager = new AssetManager(fileSystem);
-			}
 		}
 
         protected override void OnResize(ResizeEventArgs args)
 		{
 			GL.Viewport(0, 0, args.Width, args.Height);
-			world.OnResize(args);
+			game.StartNewGame(args.Size, MouseState, KeyboardState);
 		}
 
 		protected override void OnRenderFrame(FrameEventArgs args)
 		{
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
-
-			world.RenderFrame();
-
+			game.RenderFrame();
 			Context.SwapBuffers();
 		}
 
 		protected override void OnUpdateFrame(FrameEventArgs args)
 		{
-			world.Update(args);
+			game.Update(args);
 		}
 
 		//private void LoadXbf(string model, Vector3 modelPos)

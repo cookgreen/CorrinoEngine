@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.Game;
+﻿using CorrinoEngine.Core;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;

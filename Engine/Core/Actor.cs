@@ -9,7 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CorrinoEngine.Game
+namespace CorrinoEngine.Core
 {
     public class Actor
     {

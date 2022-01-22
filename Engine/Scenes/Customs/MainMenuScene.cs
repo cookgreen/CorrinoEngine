@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CorrinoEngine.Game;
+using CorrinoEngine.Core;
 using CorrinoEngine.UI;
 using OpenTK.Windowing.Desktop;
 

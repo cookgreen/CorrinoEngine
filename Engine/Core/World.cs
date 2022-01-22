@@ -15,7 +15,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CorrinoEngine.Game
+namespace CorrinoEngine.Core
 {
     public class World
     {
@@ -57,10 +57,11 @@ namespace CorrinoEngine.Game
 
             camera = new PerspectiveCamera
             {
-                Size = new Vector2(viewportSize.X, viewportSize.Y),
+                Size = viewportSize,
                 Direction = new Vector3(0, -1, 1).Normalized(),
                 Position = new Vector3(0, 1, -1) * 128
             };
+            camera.Size = viewportSize;
 
             camController = new RTSCameraController(camera);
             camController.InjectKeyborardState(ks);
@@ -70,6 +71,14 @@ namespace CorrinoEngine.Game
             orderManager.OrderExecuted += OrderManager_OrderExecuted;
 
             sceneManager = new SceneManager(this);
+
+            worldRenderer = new WorldRenderer();
+            terrainRenderer = new TerrainRenderer();
+        }
+
+        public void Start()
+        {
+            sceneManager.StartNewScene("InnerGame");
         }
 
         private void OrderManager_OrderExecuted(string orderName, object orderParams)
@@ -82,15 +91,6 @@ namespace CorrinoEngine.Game
                     SpawnActor(CreateActor(actorName));
                     break;
             }
-        }
-
-        public void OnResize(ResizeEventArgs args)
-        {
-            camera.Size = new Vector2(args.Width, args.Height);
-            worldRenderer = new WorldRenderer();
-            terrainRenderer = new TerrainRenderer();
-
-            sceneManager.StartNewScene("InnerGame");
         }
 
         public Actor CreateActor(string actorTypeName)
@@ -132,9 +132,7 @@ namespace CorrinoEngine.Game
         public void Update(FrameEventArgs args)
         {
             camController.Update();
-
             orderManager.Update();
-
             worldRenderer.UpdateFrame(args);
         }
     }

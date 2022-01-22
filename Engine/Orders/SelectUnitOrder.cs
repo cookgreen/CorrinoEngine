@@ -1,5 +1,5 @@
 ﻿using CorrinoEngine.Cameras;
-using CorrinoEngine.Game;
+using CorrinoEngine.Core;
 using CorrinoEngine.Renderer;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;

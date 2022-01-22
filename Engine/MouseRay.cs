@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.Game;
+﻿using CorrinoEngine.Core;
 using CorrinoEngine.Renderer;
 using OpenTK.Graphics;
 using OpenTK.Graphics.OpenGL4;
