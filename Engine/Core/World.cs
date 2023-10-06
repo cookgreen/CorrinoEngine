@@ -1,6 +1,7 @@
 ﻿using CorrinoEngine.Assets;
 using CorrinoEngine.Cameras;
 using CorrinoEngine.Fields;
+using CorrinoEngine.Forms;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Mods;
 using CorrinoEngine.Orders;
@@ -19,6 +20,8 @@ namespace CorrinoEngine.Core
 {
     public class World
     {
+        private string currentModel;
+        private bool isEnableDebugMode;
         private ModData modData;
         private AssetManager assetManager;
 
@@ -33,9 +36,17 @@ namespace CorrinoEngine.Core
         private OrderManager orderManager;
         private SceneManager sceneManager;
 
+        private KeyboardState ks;
+        private MouseState ms;
+
         public List<FactionInfo> FactionInfos
         {
             get { return factionInfos; }
+        }
+
+        public bool IsEnableDebugMode
+		{
+            get { return isEnableDebugMode; }
         }
 
         public World(
@@ -45,8 +56,12 @@ namespace CorrinoEngine.Core
             MouseState ms, 
             KeyboardState ks)
         {
-            this.assetManager = assetManager;
+            isEnableDebugMode = true;
+
+			this.assetManager = assetManager;
             this.modData = modData;
+            this.ms = ms;
+            this.ks = ks;
 
             FieldManager.Instance.Init(modData);
 
@@ -70,7 +85,7 @@ namespace CorrinoEngine.Core
             orderManager = new OrderManager(this, camera, ks, ms);
             orderManager.OrderExecuted += OrderManager_OrderExecuted;
 
-            sceneManager = new SceneManager(this);
+            sceneManager = new SceneManager(this, ms, ks);
 
             worldRenderer = new WorldRenderer();
             terrainRenderer = new TerrainRenderer();
@@ -104,7 +119,7 @@ namespace CorrinoEngine.Core
         public void SpawnActor(Actor actor)
         {
             Mesh mesh = assetManager.Load<XbfMesh>(this, actor.ActorData["idle"].Resource);
-            MeshInstance meshInstance = new MeshInstance(actor, mesh);
+            MeshInstance meshInstance = new MeshInstance(mesh);
 
             actor.Spawn(meshInstance);
             worldRenderer.RenderObject(meshInstance);
@@ -134,6 +149,36 @@ namespace CorrinoEngine.Core
             camController.Update();
             orderManager.Update();
             worldRenderer.UpdateFrame(args);
+            sceneManager.Update();
+
+            if(IsEnableDebugMode)
+            {
+                if(ks.IsKeyDown(Keys.M) && ks.IsKeyDown(Keys.LeftShift))
+                {
+                    frmModelSelector modelSelector = new frmModelSelector(assetManager);
+                    if (modelSelector.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                    {
+                        LoadXbf(modelSelector.SelectedModel);
+                    }
+                }
+            }
         }
-    }
+
+		private void LoadXbf(string model, Vector3 modelPos)
+		{
+			currentModel = model;
+			var mesh = assetManager.Load<XbfMesh>(this, model);
+			var meshInstance = new MeshInstance(mesh) { Speed = 20 };
+			meshInstance.Position = modelPos;
+			worldRenderer.RenderObject(meshInstance);
+		}
+		
+		private void LoadXbf(string model)
+		{
+			currentModel = model;
+			var mesh = assetManager.Load<XbfMesh>(this, model);
+			var meshInstance = new MeshInstance(mesh) {Speed = 20};
+			worldRenderer.RenderObject(meshInstance);
+		}
+	}
 }

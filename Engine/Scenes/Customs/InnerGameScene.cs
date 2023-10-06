@@ -17,12 +17,15 @@ namespace CorrinoEngine.Scenes.Customs
 
         public override void Start()
         {
-            frmFactionSelection factionSelectionWin = new frmFactionSelection(world.FactionInfos);
-            if(factionSelectionWin.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            if (!world.IsEnableDebugMode)
             {
-                var startUnit = world.CreateActor(factionSelectionWin.SelectedFactionInfo.StartActor);
-                world.SpawnActor(startUnit);
-            };
+                frmFactionSelection factionSelectionWin = new frmFactionSelection(world.FactionInfos);
+                if (factionSelectionWin.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+                {
+                    var startUnit = world.CreateActor(factionSelectionWin.SelectedFactionInfo.StartActor);
+                    world.SpawnActor(startUnit);
+                };
+            }
         }
 
         public override void Exit()

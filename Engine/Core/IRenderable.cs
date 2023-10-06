@@ -10,7 +10,6 @@ namespace CorrinoEngine.Core
 {
     public interface IRenderable
     {
-        Actor Actor { get; }
         Vector3 Position { get; }
         float BoundingRadius { get; }
 

@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <StartupObject>CorrinoEngine.Program</StartupObject>
     <ApplicationIcon>ebfd.ico</ApplicationIcon>
@@ -12,6 +12,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
     <OutputPath>..\bin</OutputPath>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="Loaders\**" />
+    <EmbeddedResource Remove="Loaders\**" />
+    <None Remove="Loaders\**" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="OpenTK" Version="4.6.7" />
@@ -29,10 +35,6 @@
     <None Update="ebfd.ico">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </None>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Loaders\" />
   </ItemGroup>
 
 </Project>

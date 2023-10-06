@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace CorrinoEngine
 {
-    internal class OpenTKHelper
+    internal class Helper
     {
 		public static Vector3 UnProject(
 			ref Matrix4 projection,

@@ -32,14 +32,8 @@ namespace CorrinoEngine.Graphics.Mesh
             get { return boundingRadius; }
         }
 
-		public Actor Actor
-        {
-            get { return actor; }
-        }
-
-        public MeshInstance(Actor actor, Mesh mesh)
+        public MeshInstance(Mesh mesh)
 		{
-			this.actor = actor;
 			this.mesh = mesh;
 
 			this.totalFrames = this.GetLongestAnimation(this.mesh);

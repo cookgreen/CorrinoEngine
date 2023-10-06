@@ -1,6 +1,7 @@
 ﻿using CorrinoEngine.Core;
 using CorrinoEngine.Scenes.Customs;
 using OpenTK.Windowing.Desktop;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,11 +14,15 @@ namespace CorrinoEngine.Scenes
     {
         private World world;
         private Stack<GameScene> scenes;
+        private MouseState ms;
+        private KeyboardState ks;
 
-        public SceneManager(World world)
+		public SceneManager(World world, MouseState ms, KeyboardState ks)
         {
             this.world = world;
             scenes = new Stack<GameScene>();
+            this.ms = ms;
+            this.ks = ks;
         }
 
         public void StartNewScene(string sceneName)
@@ -42,5 +47,9 @@ namespace CorrinoEngine.Scenes
 
             newScene.Start();
         }
-    }
+
+		public void Update()
+		{
+		}
+	}
 }

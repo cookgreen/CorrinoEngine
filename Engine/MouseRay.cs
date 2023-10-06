@@ -39,8 +39,8 @@ namespace CorrinoEngine
             _start = new Vector3(0, 0, 0);
             _end = new Vector3(0, 0, 0);
 
-            OpenTKHelper.UnProject(ref projMatrix, modelMatrix, new Size(viewport[0], viewport[1]), new Vector3(x, y, 0.0f));
-            OpenTKHelper.UnProject(ref projMatrix, modelMatrix, new Size(viewport[0], viewport[1]), new Vector3(x, y, 1.0f));
+            Helper.UnProject(ref projMatrix, modelMatrix, new Size(viewport[0], viewport[1]), new Vector3(x, y, 0.0f));
+            Helper.UnProject(ref projMatrix, modelMatrix, new Size(viewport[0], viewport[1]), new Vector3(x, y, 1.0f));
         }
 
         internal List<IRenderable> RayCastQuery()

@@ -57,29 +57,6 @@ namespace CorrinoEngine
 			game.Update(args);
 		}
 
-		//private void LoadXbf(string model, Vector3 modelPos)
-		//{
-		//	currentModel = model;
-		//
-		//	var mesh = assetManager.Load<XbfMesh>(this, model);
-		//
-		//	var meshInstance = new MeshInstance(mesh) { Speed = 20 };
-		//	meshInstance.World = Matrix4.CreateTranslation(modelPos);
-		//
-		//	worldRenderer.RenderModel(meshInstance);
-		//}
-		//
-		//private void LoadXbf(string model)
-		//{
-		//	currentModel = model;
-		//
-		//	var mesh = assetManager.Load<XbfMesh>(this, model);
-		//
-		//	var meshInstance = new MeshInstance(mesh) {Speed = 20};
-		//
-		//	worldRenderer.RenderModel(meshInstance);
-		//}
-
         protected override void OnUnload()
         {
 			System.Windows.Forms.Application.Exit();

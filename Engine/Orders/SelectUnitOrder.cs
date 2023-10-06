@@ -23,8 +23,6 @@ namespace CorrinoEngine.Orders
             var queryResult = args as List<IRenderable>;
             if (queryResult.Count == 1)
             {
-                queryResult[0].Actor.OnSelect();
-                OrderExecuted?.Invoke(queryResult[0].Actor.ActorData.TypeName, queryResult[0]);
             }
         }
     }

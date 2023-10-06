@@ -26,13 +26,13 @@ namespace CorrinoEngine.Forms
 
         private void btnOK_Click(object sender, EventArgs e)
         {
-            if (listView1.SelectedIndices.Count == 0)
+            if (listMods.SelectedIndices.Count == 0)
             {
                 MessageBox.Show("Please select a valid mod!", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return;
             }
 
-            var item = listView1.SelectedItems[0];
+            var item = listMods.SelectedItems[0];
             var id = item.SubItems[0].Text;
 
             string[] strArr = new string[]
@@ -52,20 +52,20 @@ namespace CorrinoEngine.Forms
 
         private void frmModSelector_Load(object sender, EventArgs e)
         {
-            listView1.Items.Clear();
+            listMods.Items.Clear();
             foreach(var mod in ModManager.Instance.Mods)
             {
                 ListViewItem lvi = new ListViewItem();
                 lvi.Text = mod.Key;
                 lvi.SubItems.Add(mod.Value.Manifest.MetaData.Name);
                 lvi.SubItems.Add(mod.Value.Manifest.MetaData.Author);
-                listView1.Items.Add(lvi);
+                listMods.Items.Add(lvi);
             }
         }
 
-        private void listView1_SelectedIndexChanged(object sender, EventArgs e)
+        private void listMods_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (listView1.SelectedItems.Count == 0)
+            if (listMods.SelectedItems.Count == 0)
             {
                 btnOK.Enabled = false;
             }

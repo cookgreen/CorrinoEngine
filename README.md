@@ -3,17 +3,9 @@
 CorrinoeEngine is an open-source re-implementation of the Emperor : Battle for Dune (2001) made by Westwood Studio   
 <img src="https://user-images.githubusercontent.com/21171007/140613614-cd2c73c0-3caa-4bcb-a744-6b3459d2f74b.png" width="100"/>
 
-## Screenshots  
-<div>
-  <div>
-    <img src="https://media.moddb.com/cache/images/engines/1/2/1051/thumb_620x2000/2021-11-15_13-38-09-64.png" width="400"/>
-    <img src="https://media.moddb.com/cache/images/engines/1/2/1051/thumb_620x2000/2021-11-15_13-37-02-27.png" width="400"/>
-  </div>
-  <div>
-    <img src="https://media.moddb.com/cache/images/engines/1/2/1051/thumb_620x2000/2021-11-15_13-36-09-21.png" width="400"/>
-    <img src="https://media.moddb.com/cache/images/engines/1/2/1051/thumb_620x2000/2021-11-15_13-32-00-22.png" width="400"/>
-  </div>
-</div>
+## Usage
+
+Use `LShift` and `M` to open Model browser
 
 ## Based on  
 .Net Core 5.0  
