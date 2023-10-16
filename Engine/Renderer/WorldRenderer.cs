@@ -29,21 +29,21 @@ namespace CorrinoEngine.Renderer
             }
         }
 
-        private List<IRenderable> renderableObjects;
-        public List<IRenderable> RenderableObjects
+        private Stack<IRenderable> renderableObjects;
+        public Stack<IRenderable> RenderableObjects
         {
             get { return renderableObjects; }
         }
 
         public WorldRenderer()
         {
-            renderableObjects = new List<IRenderable>();
+            renderableObjects = new Stack<IRenderable>();
             instance = this;
         }
 
         public void RenderObject(IRenderable renderableObject)
         {
-            renderableObjects.Add(renderableObject);
+            renderableObjects.Push(renderableObject);
         }
 
         public void Render(Camera camera)
@@ -61,5 +61,13 @@ namespace CorrinoEngine.Renderer
                 renderableObject.Update((float)args.Time);
             }
         }
-    }
+
+		public void RemoveCurrent()
+		{
+            if (renderableObjects.Count == 0)
+                return;
+
+            renderableObjects.Pop();
+		}
+	}
 }

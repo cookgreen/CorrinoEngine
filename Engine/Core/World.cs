@@ -158,6 +158,7 @@ namespace CorrinoEngine.Core
                     frmModelSelector modelSelector = new frmModelSelector(assetManager);
                     if (modelSelector.ShowDialog() == System.Windows.Forms.DialogResult.OK)
                     {
+                        worldRenderer.RemoveCurrent();
                         LoadXbf(modelSelector.SelectedModel);
                     }
                 }
@@ -175,10 +176,13 @@ namespace CorrinoEngine.Core
 		
 		private void LoadXbf(string model)
 		{
-			currentModel = model;
-			var mesh = assetManager.Load<XbfMesh>(this, model);
-			var meshInstance = new MeshInstance(mesh) {Speed = 20};
-			worldRenderer.RenderObject(meshInstance);
+            try
+			{
+				currentModel = model;
+				var mesh = assetManager.Load<XbfMesh>(this, model);
+				var meshInstance = new MeshInstance(mesh) { Speed = 20 };
+				worldRenderer.RenderObject(meshInstance);
+			}catch { }
 		}
 	}
 }

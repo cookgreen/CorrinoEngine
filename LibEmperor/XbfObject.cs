@@ -35,53 +35,80 @@ namespace LibEmperor
 			this.Triangles = new XbfTriangle[reader.ReadInt32()];
 			this.Children = new XbfObject[reader.ReadInt32()];
 
-			this.Transform = new Matrix4x4(
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble(),
-				(float) reader.ReadDouble()
-			);
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				this.Transform = new Matrix4x4(
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble(),
+					(float)reader.ReadDouble()
+				);
+			}
 
-			this.Name = new string(reader.ReadChars(reader.ReadInt32())).Split('\0')[0];
+			if(reader.BaseStream.Position!=reader.BaseStream.Length)
+			{
+				this.Name = new string(reader.ReadChars(reader.ReadInt32())).Split('\0')[0];
+			}
 
-			for (var i = 0; i < this.Children.Length; i++)
-				this.Children[i] = new XbfObject(reader);
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				for (var i = 0; i < this.Children.Length; i++)
+					this.Children[i] = new XbfObject(reader);
+			}
 
-			for (var i = 0; i < this.Vertices.Length; i++)
-				this.Vertices[i] = new XbfVertex(reader);
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				for (var i = 0; i < this.Vertices.Length; i++)
+					this.Vertices[i] = new XbfVertex(reader);
+			}
 
-			for (var i = 0; i < this.Triangles.Length; i++)
-				this.Triangles[i] = new XbfTriangle(reader);
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				for (var i = 0; i < this.Triangles.Length; i++)
+					this.Triangles[i] = new XbfTriangle(reader);
+			}
 
 			// TODO This could be AmbientLight. However, its always 255,255,255 and only present on these two files:
 			// FRONTEND/arrowhighlight.xbf
 			// FRONTEND/SCORE.XBF
-			if ((flags & Flags.Unk1) != 0)
-				for (var i = 0; i < this.Vertices.Length; i++)
-					reader.ReadBytes(3);
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				if ((flags & Flags.Unk1) != 0)
+					for (var i = 0; i < this.Vertices.Length; i++)
+						reader.ReadBytes(3);
+			}
 
-			// TODO identify this. Bitmask?
-			if ((flags & Flags.Unk2) != 0)
-				for (var i = 0; i < this.Triangles.Length; i++)
-					reader.ReadInt32();
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				// TODO identify this. Bitmask?
+				if ((flags & Flags.Unk2) != 0)
+					for (var i = 0; i < this.Triangles.Length; i++)
+						reader.ReadInt32();
+			}
 
-			if ((flags & Flags.VertexAnimation) != 0)
-				this.VertexAnimation = new XbfVertexAnimation(reader);
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				if ((flags & Flags.VertexAnimation) != 0)
+					this.VertexAnimation = new XbfVertexAnimation(reader);
+			}
 
-			if ((flags & Flags.ObjectAnimation) != 0)
-				this.ObjectAnimation = new XbfObjectAnimation(reader);
+			if (reader.BaseStream.Position != reader.BaseStream.Length)
+			{
+				if ((flags & Flags.ObjectAnimation) != 0)
+					this.ObjectAnimation = new XbfObjectAnimation(reader);
+			}
 		}
 	}
 }
