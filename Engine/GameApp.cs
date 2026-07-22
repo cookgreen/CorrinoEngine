@@ -43,6 +43,7 @@ namespace CorrinoEngine
 		{
 			GL.Viewport(0, 0, args.Width, args.Height);
 			game.StartNewGame(args.Size, MouseState, KeyboardState);
+			game.Resize(args.Size);
 		}
 
 		protected override void OnRenderFrame(FrameEventArgs args)

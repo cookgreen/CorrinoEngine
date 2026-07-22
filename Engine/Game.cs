@@ -1,7 +1,9 @@
-﻿using CorrinoEngine.Assets;
+using CorrinoEngine.Assets;
 using CorrinoEngine.Core;
 using CorrinoEngine.FileSystem;
 using CorrinoEngine.Mods;
+using CorrinoEngine.Renderer;
+using CorrinoEngine.UI;
 using LibEmperor;
 using OpenTK.Graphics.OpenGL;
 using OpenTK.Mathematics;
@@ -29,6 +31,7 @@ namespace CorrinoEngine
         private ModData currentMod;
         private World world;
         private AssetManager assetManager;
+        private HudRenderer hudRenderer;
 
         public GameState State
         {
@@ -67,6 +70,8 @@ namespace CorrinoEngine
             loadAssest(currentMod);
 
             world = new World(assetManager, currentMod, size, ms, ks);
+            UIManager.Instance.BindWorld(world);
+            hudRenderer = new HudRenderer(size);
             world.Start();
         }
 
@@ -101,11 +106,20 @@ namespace CorrinoEngine
         public void RenderFrame()
         {
             world.RenderFrame();
+            hudRenderer?.Render(world);
         }
 
         public void Update(FrameEventArgs args)
         {
             world.Update(args);
+        }
+
+        public void Resize(Vector2 size)
+        {
+            if (hudRenderer != null)
+            {
+                hudRenderer.Resize(size);
+            }
         }
     }
 }

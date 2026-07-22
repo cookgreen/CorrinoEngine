@@ -10,6 +10,8 @@ using CorrinoEngine.Orders;
 using CorrinoEngine.Renderer;
 using CorrinoEngine.Scenes;
 using CorrinoEngine.Topography;
+using CorrinoEngine.UI;
+using CorrinoEngine.Translation;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -52,6 +54,18 @@ namespace CorrinoEngine.Core
         public List<FactionInfo> FactionInfos
         {
             get { return factionInfos; }
+        }
+        public ModData ModData
+        {
+            get { return modData; }
+        }
+        public Actor SelectedActor
+        {
+            get { return selectedActor; }
+        }
+        public int ActorCount
+        {
+            get { return actors.Count; }
         }
 
         public bool IsEnableDebugMode
@@ -357,6 +371,77 @@ namespace CorrinoEngine.Core
             {
                 selectedActor.OnSelect();
             }
+
+            if (selectedActor != null && selectedActor.HasField("ProvideBuildings"))
+            {
+                UIManager.Instance.StartUI("BuildQueueUI");
+            }
+            else
+            {
+                UIManager.Instance.CloseBuildQueueUI();
+            }
+        }
+
+        public IEnumerable<ActorData> GetBuildableActors()
+        {
+            if (selectedActor == null)
+            {
+                return Enumerable.Empty<ActorData>();
+            }
+
+            object provideBuildingsField = selectedActor.GetFieldValue("ProvideBuildings");
+            if (provideBuildingsField == null)
+            {
+                return Enumerable.Empty<ActorData>();
+            }
+
+            string factionPrefix = provideBuildingsField.ToString();
+            if (string.IsNullOrWhiteSpace(factionPrefix))
+            {
+                return Enumerable.Empty<ActorData>();
+            }
+
+            return modData.Manifest.ActorDataList
+                .Where(o => o.TypeName.StartsWith(factionPrefix + "-", StringComparison.OrdinalIgnoreCase))
+                .Where(o => o.TypeName != selectedActor.ActorData.TypeName)
+                .OrderBy(o => o.TypeName)
+                .ToList();
+        }
+
+        public string GetSelectedActorDisplayName()
+        {
+            if (selectedActor == null)
+            {
+                return "None";
+            }
+
+            return GetActorDisplayName(selectedActor.ActorData);
+        }
+
+        public string GetSelectedActorDescription()
+        {
+            if (selectedActor == null)
+            {
+                return "No actor selected";
+            }
+
+            return GetActorDescription(selectedActor.ActorData);
+        }
+
+        public void EnqueueBuild(string actorTypeName)
+        {
+            if (string.IsNullOrWhiteSpace(actorTypeName))
+            {
+                return;
+            }
+
+            if (selectedActor == null)
+            {
+                return;
+            }
+
+            Vector3 spawnPosition = selectedActor.Position + new Vector3(48, 0, 48);
+            SpawnActor(CreateActor(actorTypeName), spawnPosition);
         }
 
         public void MoveSelectedActor(Vector3 target)
@@ -472,6 +557,37 @@ namespace CorrinoEngine.Core
             }
 
             return null;
+        }
+
+        private string GetActorDisplayName(ActorData actorData)
+        {
+            object rawName = actorData.DataField.Properties.ContainsKey("Name")
+                ? actorData.DataField.Properties["Name"]
+                : actorData.TypeName;
+
+            string rawValue = rawName?.ToString() ?? actorData.TypeName;
+            if (rawValue.isTransableString())
+            {
+                return rawValue.ToTransableString().Translate("English");
+            }
+
+            return rawValue;
+        }
+
+        private string GetActorDescription(ActorData actorData)
+        {
+            if (!actorData.DataField.Properties.ContainsKey("Description"))
+            {
+                return actorData.TypeName;
+            }
+
+            string rawValue = actorData.DataField.Properties["Description"]?.ToString() ?? actorData.TypeName;
+            if (rawValue.isTransableString())
+            {
+                return rawValue.ToTransableString().Translate("English");
+            }
+
+            return rawValue;
         }
 	}
 }

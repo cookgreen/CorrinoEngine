@@ -77,6 +77,21 @@ namespace CorrinoEngine.Core
             return actorData.DataField.GetFields(fieldName);
         }
 
+        public bool HasField(string fieldName)
+        {
+            return actorData.DataField.Properties.ContainsKey(fieldName);
+        }
+
+        public object GetFieldValue(string fieldName)
+        {
+            if (actorData.DataField.Properties.ContainsKey(fieldName))
+            {
+                return actorData.DataField.Properties[fieldName];
+            }
+
+            return null;
+        }
+
         public void Spawn(MeshInstance meshInstance)
         {
             this.meshInstance = meshInstance;

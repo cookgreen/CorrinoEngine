@@ -1,4 +1,5 @@
-﻿using CorrinoEngine.Forms;
+﻿using CorrinoEngine.UI;
+using CorrinoEngine.Forms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +29,7 @@ namespace CorrinoEngine.Fields
 
         public override void Execute(params object[] param)
         {
-            frmInGameUnitQueue.Instance.Show();
+            UIManager.Instance.StartUI("BuildQueueUI");
         }
     }
 }
