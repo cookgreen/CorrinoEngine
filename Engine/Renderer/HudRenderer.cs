@@ -20,6 +20,8 @@ namespace CorrinoEngine.Renderer
         private const float BuildButtonHeight = 28f;
         private const float CancelButtonWidth = 92f;
         private const float CancelButtonHeight = 28f;
+        private const float PagerButtonWidth = 26f;
+        private const int VisibleQueueItems = 5;
 
         private Vector2 viewportSize;
         private TextRenderer textRenderer;
@@ -29,7 +31,9 @@ namespace CorrinoEngine.Renderer
         private readonly Brush whiteBrush;
         private readonly Brush accentBrush;
         private readonly Brush dimBrush;
+        private readonly Brush warningBrush;
         private bool disposed;
+        private int queuePageIndex;
 
         public HudRenderer(Vector2 viewportSize)
         {
@@ -41,6 +45,8 @@ namespace CorrinoEngine.Renderer
             whiteBrush = Brushes.White;
             accentBrush = new SolidBrush(Color.FromArgb(255, 220, 186, 109));
             dimBrush = new SolidBrush(Color.FromArgb(255, 180, 180, 180));
+            warningBrush = new SolidBrush(Color.FromArgb(255, 225, 108, 108));
+            queuePageIndex = 0;
         }
 
         public void Resize(Vector2 size)
@@ -154,6 +160,20 @@ namespace CorrinoEngine.Renderer
                 return true;
             }
 
+            RectangleF prevRect = GetQueuePrevButtonRect();
+            if (prevRect.Contains(mousePosition.X, mousePosition.Y))
+            {
+                queuePageIndex = Math.Max(0, queuePageIndex - 1);
+                return true;
+            }
+
+            RectangleF nextRect = GetQueueNextButtonRect();
+            if (nextRect.Contains(mousePosition.X, mousePosition.Y))
+            {
+                queuePageIndex = Math.Min(GetQueuePageCount(world) - 1, queuePageIndex + 1);
+                return true;
+            }
+
             int index = GetBuildItemIndexAt(mousePosition);
             if (index >= 0)
             {
@@ -169,7 +189,7 @@ namespace CorrinoEngine.Renderer
             int queueIndex = GetQueueItemIndexAt(mousePosition, world);
             if (queueIndex >= 0)
             {
-                var queue = world.GetSelectedProductionQueue();
+                var queue = GetVisibleQueue(world);
                 if (queueIndex < queue.Count)
                 {
                     world.CancelSelectedProduction(queue[queueIndex].Id);
@@ -214,6 +234,7 @@ namespace CorrinoEngine.Renderer
             }
 
             RectangleF panel = GetBuildPanelRect();
+            ClampQueuePage(world);
             DrawRect(panel.X, panel.Y, panel.Width, panel.Height, Color.FromArgb(210, 12, 16, 22));
             DrawRect(panel.X, panel.Y, panel.Width, 4, Color.FromArgb(220, 196, 160, 92));
 
@@ -230,8 +251,8 @@ namespace CorrinoEngine.Renderer
                     isSelected ? Color.FromArgb(220, 63, 79, 96) : Color.FromArgb(185, 26, 33, 40));
             }
 
-            var queue = world.GetSelectedProductionQueue();
-            for (int i = 0; i < queue.Count && i < 5; i++)
+            var queue = GetVisibleQueue(world);
+            for (int i = 0; i < queue.Count; i++)
             {
                 RectangleF row = GetQueueItemRect(i);
                 bool isHead = i == 0;
@@ -245,8 +266,10 @@ namespace CorrinoEngine.Renderer
 
             RectangleF button = GetBuildButtonRect();
             Color buttonColor = string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName)
-                ? Color.FromArgb(140, 55, 55, 55)
-                : Color.FromArgb(220, 126, 97, 40);
+                ? Color.FromArgb(120, 55, 55, 55)
+                : world.CanAffordSelectedBuild()
+                    ? Color.FromArgb(220, 126, 97, 40)
+                    : Color.FromArgb(150, 88, 54, 54);
             DrawRect(button.X, button.Y, button.Width, button.Height, buttonColor);
 
             RectangleF cancelButton = GetCancelButtonRect();
@@ -254,6 +277,8 @@ namespace CorrinoEngine.Renderer
                 ? Color.FromArgb(220, 120, 54, 54)
                 : Color.FromArgb(120, 55, 55, 55);
             DrawRect(cancelButton.X, cancelButton.Y, cancelButton.Width, cancelButton.Height, cancelColor);
+
+            DrawQueuePager(world);
 
             DrawProductionProgress(world);
         }
@@ -266,6 +291,7 @@ namespace CorrinoEngine.Renderer
             }
 
             RectangleF panel = GetBuildPanelRect();
+            ClampQueuePage(world);
             textRenderer.DrawString("Build Queue", titleFont, whiteBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 10));
             textRenderer.DrawString("Click an entry to select, then click Build.", smallFont, dimBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 38));
             textRenderer.DrawString($"Credits: {world.Credits}", bodyFont, accentBrush, new PointF(panel.Right - 140, panel.Y + 12));
@@ -282,14 +308,20 @@ namespace CorrinoEngine.Renderer
             }
 
             textRenderer.DrawString("Queue", bodyFont, whiteBrush, new PointF(GetQueuePanelLeft(), panel.Y + 38));
-            var queue = world.GetSelectedProductionQueue();
-            for (int i = 0; i < queue.Count && i < 5; i++)
+            textRenderer.DrawString($"{queuePageIndex + 1}/{GetQueuePageCount(world)}", smallFont, dimBrush, new PointF(GetQueuePanelLeft() + 80, panel.Y + 41));
+            RectangleF prev = GetQueuePrevButtonRect();
+            RectangleF next = GetQueueNextButtonRect();
+            textRenderer.DrawString("<", bodyFont, whiteBrush, new PointF(prev.X + 8, prev.Y + 1));
+            textRenderer.DrawString(">", bodyFont, whiteBrush, new PointF(next.X + 8, next.Y + 1));
+            var queue = GetVisibleQueue(world);
+            for (int i = 0; i < queue.Count; i++)
             {
                 ProductionOrder order = queue[i];
                 RectangleF row = GetQueueItemRect(i);
                 ActorData actorData = world.GetActorData(order.ActorTypeName);
                 string label = world.GetActorDisplayName(actorData);
-                string suffix = i == 0 ? $"{(int)(world.GetSelectedProductionProgress01() * 100)}%" : "Cancel";
+                bool isGlobalHead = IsVisibleQueueHead(world, order);
+                string suffix = isGlobalHead ? $"{(int)(world.GetSelectedProductionProgress01() * 100)}%" : "Cancel";
                 textRenderer.DrawString(label, smallFont, whiteBrush, new PointF(row.X + 8, row.Y + 5));
                 textRenderer.DrawString(suffix, smallFont, dimBrush, new PointF(row.Right - 42, row.Y + 5));
             }
@@ -310,6 +342,11 @@ namespace CorrinoEngine.Renderer
                 : $"Production: {world.GetActorDisplayName(world.GetActorData(currentProduction.ActorTypeName))}";
             textRenderer.DrawString(queueStatus, smallFont, whiteBrush, new PointF(panel.X + BuildPanelPadding, panel.Bottom - 50));
             textRenderer.DrawString($"Queue: {world.SelectedProductionQueueCount}", smallFont, dimBrush, new PointF(panel.X + 240, panel.Bottom - 50));
+
+            if (!string.IsNullOrWhiteSpace(world.BuildFeedbackMessage))
+            {
+                textRenderer.DrawString(world.BuildFeedbackMessage, smallFont, warningBrush, new PointF(panel.X + BuildPanelPadding, panel.Bottom - 72));
+            }
         }
 
         private RectangleF GetBuildPanelRect()
@@ -382,7 +419,7 @@ namespace CorrinoEngine.Renderer
 
         private int GetQueueItemIndexAt(Vector2 mousePosition, World world)
         {
-            int visibleCount = Math.Min(5, world.GetSelectedProductionQueue().Count);
+            int visibleCount = GetVisibleQueue(world).Count;
             for (int i = 0; i < visibleCount; i++)
             {
                 if (GetQueueItemRect(i).Contains(mousePosition.X, mousePosition.Y))
@@ -392,6 +429,55 @@ namespace CorrinoEngine.Renderer
             }
 
             return -1;
+        }
+
+        private RectangleF GetQueuePrevButtonRect()
+        {
+            RectangleF panel = GetBuildPanelRect();
+            return new RectangleF(panel.Right - 64, panel.Y + 36, PagerButtonWidth, 20);
+        }
+
+        private RectangleF GetQueueNextButtonRect()
+        {
+            RectangleF panel = GetBuildPanelRect();
+            return new RectangleF(panel.Right - 34, panel.Y + 36, PagerButtonWidth, 20);
+        }
+
+        private void DrawQueuePager(World world)
+        {
+            RectangleF prev = GetQueuePrevButtonRect();
+            RectangleF next = GetQueueNextButtonRect();
+            bool canPrev = queuePageIndex > 0;
+            bool canNext = queuePageIndex < GetQueuePageCount(world) - 1;
+
+            DrawRect(prev.X, prev.Y, prev.Width, prev.Height, canPrev ? Color.FromArgb(180, 55, 65, 75) : Color.FromArgb(100, 45, 45, 45));
+            DrawRect(next.X, next.Y, next.Width, next.Height, canNext ? Color.FromArgb(180, 55, 65, 75) : Color.FromArgb(100, 45, 45, 45));
+        }
+
+        private int GetQueuePageCount(World world)
+        {
+            int count = world.GetSelectedProductionQueue().Count;
+            return Math.Max(1, (int)Math.Ceiling(count / (float)VisibleQueueItems));
+        }
+
+        private void ClampQueuePage(World world)
+        {
+            queuePageIndex = Math.Clamp(queuePageIndex, 0, GetQueuePageCount(world) - 1);
+        }
+
+        private System.Collections.Generic.List<ProductionOrder> GetVisibleQueue(World world)
+        {
+            ClampQueuePage(world);
+            return world.GetSelectedProductionQueue()
+                .Skip(queuePageIndex * VisibleQueueItems)
+                .Take(VisibleQueueItems)
+                .ToList();
+        }
+
+        private bool IsVisibleQueueHead(World world, ProductionOrder order)
+        {
+            ProductionOrder head = world.GetSelectedProduction();
+            return head != null && order != null && head.Id == order.Id;
         }
 
         private void DrawProductionProgress(World world)
@@ -424,6 +510,7 @@ namespace CorrinoEngine.Renderer
             smallFont.Dispose();
             (accentBrush as IDisposable)?.Dispose();
             (dimBrush as IDisposable)?.Dispose();
+            (warningBrush as IDisposable)?.Dispose();
             disposed = true;
             GC.SuppressFinalize(this);
         }

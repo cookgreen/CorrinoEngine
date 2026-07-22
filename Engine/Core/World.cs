@@ -53,6 +53,7 @@ namespace CorrinoEngine.Core
         private KeyboardState ks;
         private MouseState ms;
         private int credits;
+        private string buildFeedbackMessage;
 
         public List<FactionInfo> FactionInfos
         {
@@ -90,6 +91,10 @@ namespace CorrinoEngine.Core
         {
             get { return selectedBuildActorTypeName; }
         }
+        public string BuildFeedbackMessage
+        {
+            get { return buildFeedbackMessage; }
+        }
 
         public bool IsEnableDebugMode
 		{
@@ -110,6 +115,7 @@ namespace CorrinoEngine.Core
             this.ms = ms;
             this.ks = ks;
             credits = 3000;
+            buildFeedbackMessage = string.Empty;
 
             FieldManager.Instance.Init(modData);
 
@@ -454,6 +460,7 @@ namespace CorrinoEngine.Core
         public void SelectBuildActor(string actorTypeName)
         {
             selectedBuildActorTypeName = actorTypeName;
+            buildFeedbackMessage = string.Empty;
             UIManager.Instance.RefreshBuildQueueUI();
         }
 
@@ -481,21 +488,25 @@ namespace CorrinoEngine.Core
         {
             if (string.IsNullOrWhiteSpace(actorTypeName))
             {
+                buildFeedbackMessage = "Select a build item first.";
                 return;
             }
 
             if (selectedActor == null)
             {
+                buildFeedbackMessage = "No producer selected.";
                 return;
             }
 
             int cost = ResolveBuildCost(actorTypeName);
             if (credits < cost)
             {
+                buildFeedbackMessage = $"Insufficient credits: need {cost}, have {credits}.";
                 return;
             }
 
             credits -= cost;
+            buildFeedbackMessage = string.Empty;
 
             selectedActor.EnqueueProduction(new ProductionOrder
             {
@@ -725,6 +736,16 @@ namespace CorrinoEngine.Core
         public int GetActorCost(string actorTypeName)
         {
             return ResolveBuildCost(actorTypeName);
+        }
+
+        public bool CanAffordSelectedBuild()
+        {
+            if (string.IsNullOrWhiteSpace(selectedBuildActorTypeName))
+            {
+                return false;
+            }
+
+            return credits >= ResolveBuildCost(selectedBuildActorTypeName);
         }
 
         private void UpdateProductionQueues(float deltaTime)
