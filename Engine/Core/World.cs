@@ -3,15 +3,18 @@ using CorrinoEngine.Cameras;
 using CorrinoEngine.Fields;
 using CorrinoEngine.Forms;
 using CorrinoEngine.Graphics.Mesh;
+using CorrinoEngine.Maps;
 using CorrinoEngine.Mods;
 using CorrinoEngine.Orders;
 using CorrinoEngine.Renderer;
 using CorrinoEngine.Scenes;
+using CorrinoEngine.Topography;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -32,6 +35,8 @@ namespace CorrinoEngine.Core
         private CameraController camController;
         private WorldRenderer worldRenderer;
         private TerrainRenderer terrainRenderer;
+        private Terrain terrain;
+        private GameMap currentMap;
 
         private OrderManager orderManager;
         private SceneManager sceneManager;
@@ -93,6 +98,7 @@ namespace CorrinoEngine.Core
 
         public void Start()
         {
+            LoadDefaultMap();
             sceneManager.StartNewScene("InnerGame");
         }
 
@@ -102,8 +108,9 @@ namespace CorrinoEngine.Core
             {
                 case "PlaceBuilding":
                     object[] arr = orderParams as object[];
+                    Vector3 position = (Vector3)arr[0];
                     var actorName = arr[1].ToString();
-                    SpawnActor(CreateActor(actorName));
+                    SpawnActor(CreateActor(actorName), position);
                     break;
             }
         }
@@ -118,8 +125,14 @@ namespace CorrinoEngine.Core
 
         public void SpawnActor(Actor actor)
         {
+            SpawnActor(actor, Vector3.Zero);
+        }
+
+        public void SpawnActor(Actor actor, Vector3 position)
+        {
             Mesh mesh = assetManager.Load<XbfMesh>(this, actor.ActorData["idle"].Resource);
             MeshInstance meshInstance = new MeshInstance(mesh);
+            meshInstance.Position = position;
 
             actor.Spawn(meshInstance);
             worldRenderer.RenderObject(meshInstance);
@@ -141,6 +154,10 @@ namespace CorrinoEngine.Core
 
         public void RenderFrame()
         {
+            if (terrain != null)
+            {
+                terrainRenderer.RenderFrame(default, camera);
+            }
             worldRenderer.Render(camera);
         }
 
@@ -148,6 +165,10 @@ namespace CorrinoEngine.Core
         {
             camController.Update();
             orderManager.Update();
+            if (terrain != null)
+            {
+                terrainRenderer.UpdateFrame(args);
+            }
             worldRenderer.UpdateFrame(args);
             sceneManager.Update();
 
@@ -184,5 +205,65 @@ namespace CorrinoEngine.Core
 				worldRenderer.RenderObject(meshInstance);
 			}catch { }
 		}
+
+        private void LoadDefaultMap()
+        {
+            string mapsDir = modData.Manifest.MapsDir;
+            if (string.IsNullOrWhiteSpace(mapsDir))
+            {
+                return;
+            }
+
+            string mapPath = Path.Combine(modData.FullPath, mapsDir, "default-map.yaml");
+            if (!File.Exists(mapPath))
+            {
+                return;
+            }
+
+            currentMap = new GameMap();
+            currentMap.Load(mapPath);
+
+            terrain = BuildTerrain(currentMap);
+            terrainRenderer.RenderTerrain(terrain);
+
+            foreach (var actor in currentMap.Actors)
+            {
+                if (string.IsNullOrWhiteSpace(actor.Type))
+                {
+                    continue;
+                }
+
+                SpawnActor(CreateActor(actor.Type), new Vector3(actor.X, actor.Y, actor.Z));
+            }
+        }
+
+        private Terrain BuildTerrain(GameMap map)
+        {
+            Terrain newTerrain = new Terrain(terrainRenderer);
+            float tileSize = map.Manifest.TileSize;
+
+            foreach (var tile in map.Tiles)
+            {
+                MeshInstance meshInstance = new MeshInstance(TerrainMeshFactory.CreateTileMesh(tileSize, PickTileColor(tile)));
+                meshInstance.Position = new Vector3(tile.X, tile.Y, tile.Z);
+                newTerrain.AppendTile(new TerrainTile(meshInstance, (int)tile.X, (int)tile.Y, (int)tile.Z));
+            }
+
+            return newTerrain;
+        }
+
+        private Vector3 PickTileColor(GameMapTile tile)
+        {
+            if (!string.IsNullOrWhiteSpace(tile.Mesh))
+            {
+                int hash = Math.Abs(tile.Mesh.GetHashCode());
+                return new Vector3(
+                    0.45f + (hash % 20) / 100f,
+                    0.38f + (hash % 15) / 120f,
+                    0.22f + (hash % 10) / 140f);
+            }
+
+            return new Vector3(0.58f, 0.47f, 0.28f);
+        }
 	}
 }

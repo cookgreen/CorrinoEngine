@@ -1,0 +1,25 @@
+Map:
+	Name: Arrakis Test Ground
+	Author: CorrinoEngine
+	Width: 10
+	Height: 10
+	TileSize: 64
+	TileMesh: sand
+
+Actor@1:
+	Type: atreides-conyard
+	X: 128
+	Y: 0
+	Z: 128
+
+Actor@2:
+	Type: harkonnen-conyard
+	X: 448
+	Y: 0
+	Z: 128
+
+Actor@3:
+	Type: ordos-conyard
+	X: 288
+	Y: 0
+	Z: 448

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -30,11 +30,21 @@ namespace CorrinoEngine.Renderer
 
         public void RenderFrame(FrameEventArgs args, Camera camera)
         {
+            if (terrain == null)
+            {
+                return;
+            }
+
             terrain.Draw(args, camera);
         }
 
         public void UpdateFrame(FrameEventArgs args)
         {
+            if (terrain == null)
+            {
+                return;
+            }
+
             terrain.Update(args);
         }
     }
