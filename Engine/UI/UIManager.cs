@@ -1,5 +1,4 @@
 using CorrinoEngine.Core;
-using CorrinoEngine.Forms;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,6 +11,7 @@ namespace CorrinoEngine.UI
     {
         private static UIManager instance;
         private World world;
+        private bool isBuildQueueVisible;
 
         public static UIManager Instance
         {
@@ -23,6 +23,10 @@ namespace CorrinoEngine.UI
                 }
                 return instance;
             }
+        }
+        public bool IsBuildQueueVisible
+        {
+            get { return isBuildQueueVisible; }
         }
 
         public void CreateButton(string name)
@@ -43,39 +47,21 @@ namespace CorrinoEngine.UI
 
             if (internalUIName == "BuildQueueUI" && world != null)
             {
-                frmInGameUnitQueue.Instance.BindWorld(world);
-                frmInGameUnitQueue.Instance.UpdateData();
-                if (!frmInGameUnitQueue.Instance.Visible)
-                {
-                    frmInGameUnitQueue.Instance.Show();
-                }
-                else
-                {
-                    frmInGameUnitQueue.Instance.BringToFront();
-                }
+                isBuildQueueVisible = true;
             }
         }
 
         public void RefreshBuildQueueUI()
         {
-            if (world == null)
+            if (world != null && world.SelectedActor != null && world.SelectedActor.HasField("ProvideBuildings"))
             {
-                return;
-            }
-
-            if (frmInGameUnitQueue.Instance.Visible)
-            {
-                frmInGameUnitQueue.Instance.BindWorld(world);
-                frmInGameUnitQueue.Instance.UpdateData();
+                isBuildQueueVisible = true;
             }
         }
 
         public void CloseBuildQueueUI()
         {
-            if (frmInGameUnitQueue.Instance.Visible)
-            {
-                frmInGameUnitQueue.Instance.Hide();
-            }
+            isBuildQueueVisible = false;
         }
     }
 }

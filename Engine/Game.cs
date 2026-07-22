@@ -111,6 +111,15 @@ namespace CorrinoEngine
 
         public void Update(FrameEventArgs args)
         {
+            if (hudRenderer != null)
+            {
+                bool handled = hudRenderer.TryHandleLeftClick(world, new Vector2(world.MouseX, world.MouseY));
+                if (handled)
+                {
+                    world.SuppressNextLeftClick();
+                }
+            }
+
             world.Update(args);
         }
 

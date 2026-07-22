@@ -17,6 +17,7 @@ namespace CorrinoEngine.Core
         private ActorData actorData;
         private MeshInstance meshInstance;
         private List<Field> fields;
+        private Queue<ProductionOrder> productionQueue;
         private Vector3 moveTarget;
         private bool isSelected;
         private float moveSpeed;
@@ -50,10 +51,15 @@ namespace CorrinoEngine.Core
         {
             get { return isSelected; }
         }
+        public IReadOnlyCollection<ProductionOrder> ProductionQueue
+        {
+            get { return productionQueue.ToArray(); }
+        }
 
         public Actor(ActorData actorData)
         {
             this.actorData = actorData;
+            productionQueue = new Queue<ProductionOrder>();
             moveTarget = Vector3.Zero;
             moveSpeed = 72;
             selectionRadius = 36;
@@ -123,6 +129,69 @@ namespace CorrinoEngine.Core
         public void MoveTo(Vector3 target)
         {
             moveTarget = target;
+        }
+
+        public void EnqueueProduction(ProductionOrder order)
+        {
+            productionQueue.Enqueue(order);
+        }
+
+        public ProductionOrder PeekProduction()
+        {
+            if (productionQueue.Count == 0)
+            {
+                return null;
+            }
+
+            return productionQueue.Peek();
+        }
+
+        public ProductionOrder DequeueProduction()
+        {
+            if (productionQueue.Count == 0)
+            {
+                return null;
+            }
+
+            return productionQueue.Dequeue();
+        }
+
+        public void CancelProduction()
+        {
+            if (productionQueue.Count == 0)
+            {
+                return;
+            }
+
+            productionQueue.Dequeue();
+        }
+
+        public bool CancelProduction(Guid orderId, out ProductionOrder removedOrder)
+        {
+            removedOrder = null;
+            if (productionQueue.Count == 0)
+            {
+                return false;
+            }
+
+            Queue<ProductionOrder> rebuiltQueue = new Queue<ProductionOrder>();
+            bool removed = false;
+
+            while (productionQueue.Count > 0)
+            {
+                ProductionOrder current = productionQueue.Dequeue();
+                if (!removed && current.Id == orderId)
+                {
+                    removedOrder = current;
+                    removed = true;
+                    continue;
+                }
+
+                rebuiltQueue.Enqueue(current);
+            }
+
+            productionQueue = rebuiltQueue;
+            return removed;
         }
 
         public void Update(FrameEventArgs args)

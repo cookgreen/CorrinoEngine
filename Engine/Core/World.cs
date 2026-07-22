@@ -35,6 +35,8 @@ namespace CorrinoEngine.Core
         private List<FactionInfo> factionInfos;
         private List<Actor> actors;
         private Actor selectedActor;
+        private string selectedBuildActorTypeName;
+        private bool suppressNextLeftClick;
         private bool wasLeftMouseDown;
         private bool wasRightMouseDown;
 
@@ -50,6 +52,7 @@ namespace CorrinoEngine.Core
 
         private KeyboardState ks;
         private MouseState ms;
+        private int credits;
 
         public List<FactionInfo> FactionInfos
         {
@@ -66,6 +69,26 @@ namespace CorrinoEngine.Core
         public int ActorCount
         {
             get { return actors.Count; }
+        }
+        public int SelectedProductionQueueCount
+        {
+            get { return selectedActor?.ProductionQueue.Count ?? 0; }
+        }
+        public float MouseX
+        {
+            get { return ms.X; }
+        }
+        public float MouseY
+        {
+            get { return ms.Y; }
+        }
+        public int Credits
+        {
+            get { return credits; }
+        }
+        public string SelectedBuildActorTypeName
+        {
+            get { return selectedBuildActorTypeName; }
         }
 
         public bool IsEnableDebugMode
@@ -86,6 +109,7 @@ namespace CorrinoEngine.Core
             this.modData = modData;
             this.ms = ms;
             this.ks = ks;
+            credits = 3000;
 
             FieldManager.Instance.Init(modData);
 
@@ -150,6 +174,11 @@ namespace CorrinoEngine.Core
             return actor;
         }
 
+        public ActorData GetActorData(string actorTypeName)
+        {
+            return modData.Manifest.ActorDataList.FirstOrDefault(o => o.TypeName == actorTypeName);
+        }
+
         public void SpawnActor(Actor actor)
         {
             SpawnActor(actor, Vector3.Zero);
@@ -193,6 +222,7 @@ namespace CorrinoEngine.Core
         {
             camController.Update();
             orderManager.Update();
+            UpdateProductionQueues((float)args.Time);
             if (terrain != null)
             {
                 terrainRenderer.UpdateFrame(args);
@@ -347,7 +377,19 @@ namespace CorrinoEngine.Core
             bool isDown = ms.IsButtonDown(MouseButton.Button1);
             bool clicked = isDown && !wasLeftMouseDown;
             wasLeftMouseDown = isDown;
+
+            if (clicked && suppressNextLeftClick)
+            {
+                suppressNextLeftClick = false;
+                return false;
+            }
+
             return clicked;
+        }
+
+        public void SuppressNextLeftClick()
+        {
+            suppressNextLeftClick = true;
         }
 
         public bool ConsumeRightClick()
@@ -366,6 +408,7 @@ namespace CorrinoEngine.Core
             }
 
             selectedActor = actor;
+            selectedBuildActorTypeName = null;
 
             if (selectedActor != null)
             {
@@ -408,6 +451,12 @@ namespace CorrinoEngine.Core
                 .ToList();
         }
 
+        public void SelectBuildActor(string actorTypeName)
+        {
+            selectedBuildActorTypeName = actorTypeName;
+            UIManager.Instance.RefreshBuildQueueUI();
+        }
+
         public string GetSelectedActorDisplayName()
         {
             if (selectedActor == null)
@@ -440,8 +489,81 @@ namespace CorrinoEngine.Core
                 return;
             }
 
-            Vector3 spawnPosition = selectedActor.Position + new Vector3(48, 0, 48);
-            SpawnActor(CreateActor(actorTypeName), spawnPosition);
+            int cost = ResolveBuildCost(actorTypeName);
+            if (credits < cost)
+            {
+                return;
+            }
+
+            credits -= cost;
+
+            selectedActor.EnqueueProduction(new ProductionOrder
+            {
+                Id = Guid.NewGuid(),
+                ActorTypeName = actorTypeName,
+                Progress = 0,
+                Duration = ResolveBuildDuration(actorTypeName),
+                Cost = cost
+            });
+            selectedBuildActorTypeName = actorTypeName;
+        }
+
+        public void CancelSelectedProduction()
+        {
+            if (selectedActor == null)
+            {
+                return;
+            }
+
+            ProductionOrder current = selectedActor.PeekProduction();
+            if (current == null)
+            {
+                return;
+            }
+
+            selectedActor.CancelProduction();
+            credits += ResolveRefund(current, true);
+        }
+
+        public void CancelSelectedProduction(Guid orderId)
+        {
+            if (selectedActor == null)
+            {
+                return;
+            }
+
+            ProductionOrder current = selectedActor.PeekProduction();
+            if (selectedActor.CancelProduction(orderId, out ProductionOrder removedOrder))
+            {
+                bool wasCurrent = current != null && removedOrder != null && current.Id == removedOrder.Id;
+                credits += ResolveRefund(removedOrder, wasCurrent);
+            }
+        }
+
+        public ProductionOrder GetSelectedProduction()
+        {
+            return selectedActor?.PeekProduction();
+        }
+
+        public float GetSelectedProductionProgress01()
+        {
+            ProductionOrder order = GetSelectedProduction();
+            if (order == null || order.Duration <= 0)
+            {
+                return 0;
+            }
+
+            return Math.Clamp(order.Progress / order.Duration, 0, 1);
+        }
+
+        public IReadOnlyList<ProductionOrder> GetSelectedProductionQueue()
+        {
+            if (selectedActor == null)
+            {
+                return Array.Empty<ProductionOrder>();
+            }
+
+            return selectedActor.ProductionQueue.ToList();
         }
 
         public void MoveSelectedActor(Vector3 target)
@@ -559,8 +681,13 @@ namespace CorrinoEngine.Core
             return null;
         }
 
-        private string GetActorDisplayName(ActorData actorData)
+        public string GetActorDisplayName(ActorData actorData)
         {
+            if (actorData == null)
+            {
+                return "Unknown";
+            }
+
             object rawName = actorData.DataField.Properties.ContainsKey("Name")
                 ? actorData.DataField.Properties["Name"]
                 : actorData.TypeName;
@@ -574,8 +701,13 @@ namespace CorrinoEngine.Core
             return rawValue;
         }
 
-        private string GetActorDescription(ActorData actorData)
+        public string GetActorDescription(ActorData actorData)
         {
+            if (actorData == null)
+            {
+                return string.Empty;
+            }
+
             if (!actorData.DataField.Properties.ContainsKey("Description"))
             {
                 return actorData.TypeName;
@@ -588,6 +720,103 @@ namespace CorrinoEngine.Core
             }
 
             return rawValue;
+        }
+
+        public int GetActorCost(string actorTypeName)
+        {
+            return ResolveBuildCost(actorTypeName);
+        }
+
+        private void UpdateProductionQueues(float deltaTime)
+        {
+            foreach (var actor in actors.Where(o => o.ProductionQueue.Count > 0).ToList())
+            {
+                ProductionOrder order = actor.PeekProduction();
+                if (order == null)
+                {
+                    continue;
+                }
+
+                order.Progress += deltaTime;
+                if (order.Progress >= order.Duration)
+                {
+                    actor.DequeueProduction();
+                    SpawnProducedActor(actor, order.ActorTypeName);
+                }
+            }
+        }
+
+        private void SpawnProducedActor(Actor producer, string actorTypeName)
+        {
+            if (string.IsNullOrWhiteSpace(actorTypeName))
+            {
+                return;
+            }
+
+            Vector3 spawnPosition = producer.Position + new Vector3(48, 0, 48);
+            SpawnActor(CreateActor(actorTypeName), spawnPosition);
+        }
+
+        private float ResolveBuildDuration(string actorTypeName)
+        {
+            ActorData actorData = modData.Manifest.ActorDataList.FirstOrDefault(o => o.TypeName == actorTypeName);
+            if (actorData == null)
+            {
+                return 2f;
+            }
+
+            if (actorData.DataField.Properties.ContainsKey("BuildTime"))
+            {
+                if (float.TryParse(actorData.DataField.Properties["BuildTime"]?.ToString(), out float buildTime) && buildTime > 0)
+                {
+                    return buildTime;
+                }
+            }
+
+            if (actorData.DataField.Properties.ContainsKey("Cost"))
+            {
+                if (float.TryParse(actorData.DataField.Properties["Cost"]?.ToString(), out float cost) && cost > 0)
+                {
+                    return Math.Max(1.5f, cost / 100f);
+                }
+            }
+
+            return 2f;
+        }
+
+        private int ResolveBuildCost(string actorTypeName)
+        {
+            ActorData actorData = modData.Manifest.ActorDataList.FirstOrDefault(o => o.TypeName == actorTypeName);
+            if (actorData == null)
+            {
+                return 100;
+            }
+
+            if (actorData.DataField.Properties.ContainsKey("Cost"))
+            {
+                if (int.TryParse(actorData.DataField.Properties["Cost"]?.ToString(), out int cost) && cost > 0)
+                {
+                    return cost;
+                }
+            }
+
+            return 100;
+        }
+
+        private int ResolveRefund(ProductionOrder order, bool wasCurrent)
+        {
+            if (order == null)
+            {
+                return 0;
+            }
+
+            if (!wasCurrent || order.Duration <= 0)
+            {
+                return order.Cost;
+            }
+
+            float remainingRatio = 1f - Math.Clamp(order.Progress / order.Duration, 0, 1);
+            return (int)Math.Round(order.Cost * remainingRatio);
         }
 	}
 }
