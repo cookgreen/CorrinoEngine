@@ -1,6 +1,7 @@
 ﻿using CorrinoEngine.Assets;
 using CorrinoEngine.Cameras;
 using CorrinoEngine.Fields;
+using CorrinoEngine.FileSystem;
 using CorrinoEngine.Forms;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Maps;
@@ -30,6 +31,10 @@ namespace CorrinoEngine.Core
 
         private Actor worldActor;
         private List<FactionInfo> factionInfos;
+        private List<Actor> actors;
+        private Actor selectedActor;
+        private bool wasLeftMouseDown;
+        private bool wasRightMouseDown;
 
         private Camera camera;
         private CameraController camController;
@@ -71,6 +76,7 @@ namespace CorrinoEngine.Core
             FieldManager.Instance.Init(modData);
 
             factionInfos = new List<FactionInfo>();
+            actors = new List<Actor>();
 
             worldActor = CreateActor("World");
             parseFaction();
@@ -106,6 +112,13 @@ namespace CorrinoEngine.Core
         {
             switch(orderName)
             {
+                case "SelectActor":
+                    SelectActor(orderParams as Actor);
+                    break;
+                case "MoveActor":
+                    object[] moveArgs = orderParams as object[];
+                    MoveSelectedActor((Vector3)moveArgs[0]);
+                    break;
                 case "PlaceBuilding":
                     object[] arr = orderParams as object[];
                     Vector3 position = (Vector3)arr[0];
@@ -135,6 +148,7 @@ namespace CorrinoEngine.Core
             meshInstance.Position = position;
 
             actor.Spawn(meshInstance);
+            actors.Add(actor);
             worldRenderer.RenderObject(meshInstance);
         }
 
@@ -170,6 +184,10 @@ namespace CorrinoEngine.Core
                 terrainRenderer.UpdateFrame(args);
             }
             worldRenderer.UpdateFrame(args);
+            foreach (var actor in actors)
+            {
+                actor.Update(args);
+            }
             sceneManager.Update();
 
             if(IsEnableDebugMode)
@@ -244,7 +262,7 @@ namespace CorrinoEngine.Core
 
             foreach (var tile in map.Tiles)
             {
-                MeshInstance meshInstance = new MeshInstance(TerrainMeshFactory.CreateTileMesh(tileSize, PickTileColor(tile)));
+                MeshInstance meshInstance = CreateTerrainMeshInstance(map, tile, tileSize);
                 meshInstance.Position = new Vector3(tile.X, tile.Y, tile.Z);
                 newTerrain.AppendTile(new TerrainTile(meshInstance, (int)tile.X, (int)tile.Y, (int)tile.Z));
             }
@@ -264,6 +282,196 @@ namespace CorrinoEngine.Core
             }
 
             return new Vector3(0.58f, 0.47f, 0.28f);
+        }
+
+        private MeshInstance CreateTerrainMeshInstance(GameMap map, GameMapTile tile, float tileSize)
+        {
+            string modelResource = ResolveTerrainModelPath(map, tile);
+            if (!string.IsNullOrWhiteSpace(modelResource))
+            {
+                Mesh terrainMesh = assetManager.Load<XbfMesh>(this, modelResource);
+                return new MeshInstance(terrainMesh);
+            }
+
+            string textureResource = ResolveTerrainTexturePath(map, tile);
+            if (!string.IsNullOrWhiteSpace(textureResource))
+            {
+                Mesh terrainMesh = TerrainMeshFactory.CreateTextureTileMesh(
+                    assetManager,
+                    this,
+                    tileSize,
+                    textureResource,
+                    ResolveTileUvScale(map, tile));
+                return new MeshInstance(terrainMesh);
+            }
+
+            return new MeshInstance(TerrainMeshFactory.CreateColorTileMesh(tileSize, PickTileColor(tile)));
+        }
+
+        public Actor QueryActorAtCursor()
+        {
+            Vector3 scenePosition = camera.ToScene(new Vector2(ms.X, ms.Y));
+
+            return actors
+                .Where(o => o.MeshInstance != null)
+                .OrderBy(o => Vector2.Distance(
+                    new Vector2(o.Position.X, o.Position.Z),
+                    new Vector2(scenePosition.X, scenePosition.Z)))
+                .FirstOrDefault(o =>
+                    Vector2.Distance(
+                        new Vector2(o.Position.X, o.Position.Z),
+                        new Vector2(scenePosition.X, scenePosition.Z)) <= o.SelectionRadius);
+        }
+
+        public Vector3 QueryGroundAtCursor()
+        {
+            return camera.ToScene(new Vector2(ms.X, ms.Y));
+        }
+
+        public bool ConsumeLeftClick()
+        {
+            bool isDown = ms.IsButtonDown(MouseButton.Button1);
+            bool clicked = isDown && !wasLeftMouseDown;
+            wasLeftMouseDown = isDown;
+            return clicked;
+        }
+
+        public bool ConsumeRightClick()
+        {
+            bool isDown = ms.IsButtonDown(MouseButton.Button2);
+            bool clicked = isDown && !wasRightMouseDown;
+            wasRightMouseDown = isDown;
+            return clicked;
+        }
+
+        public void SelectActor(Actor actor)
+        {
+            if (selectedActor != null)
+            {
+                selectedActor.OnDeselect();
+            }
+
+            selectedActor = actor;
+
+            if (selectedActor != null)
+            {
+                selectedActor.OnSelect();
+            }
+        }
+
+        public void MoveSelectedActor(Vector3 target)
+        {
+            if (selectedActor == null)
+            {
+                return;
+            }
+
+            selectedActor.MoveTo(target);
+        }
+
+        private float ResolveTileUvScale(GameMap map, GameMapTile tile)
+        {
+            if (tile.UvScale > 0)
+            {
+                return tile.UvScale;
+            }
+
+            if (map.Manifest.TileUvScale > 0)
+            {
+                return map.Manifest.TileUvScale;
+            }
+
+            return 1;
+        }
+
+        private string ResolveTerrainTexturePath(GameMap map, GameMapTile tile)
+        {
+            return ResolveTerrainAssetPath(
+                tile.Texture,
+                map.Manifest.TileTexture,
+                tile.Material,
+                tile.Mesh,
+                "Textures",
+                new string[] { ".tga", ".TGA" });
+        }
+
+        private string ResolveTerrainModelPath(GameMap map, GameMapTile tile)
+        {
+            return ResolveTerrainAssetPath(
+                tile.Resource,
+                map.Manifest.TileResource,
+                tile.Material,
+                tile.Mesh,
+                string.Empty,
+                new string[] { ".xbf", ".XBF" });
+        }
+
+        private string ResolveTerrainAssetPath(string explicitPath, string manifestPath, string material, string mesh, string rootFolder, string[] extensions)
+        {
+            string[] seeds = new string[]
+            {
+                explicitPath,
+                manifestPath,
+                material,
+                mesh
+            };
+
+            foreach (string seed in seeds)
+            {
+                string resolved = ResolveAssetCandidate(seed, rootFolder, extensions);
+                if (!string.IsNullOrWhiteSpace(resolved))
+                {
+                    return resolved;
+                }
+            }
+
+            return null;
+        }
+
+        private string ResolveAssetCandidate(string candidate, string rootFolder, string[] extensions)
+        {
+            if (string.IsNullOrWhiteSpace(candidate))
+            {
+                return null;
+            }
+
+            List<string> guesses = new List<string>();
+            guesses.Add(candidate);
+
+            string normalizedRoot = rootFolder ?? string.Empty;
+            string normalizedCandidate = candidate.Replace('\\', '/');
+            if (!string.IsNullOrWhiteSpace(normalizedRoot) && !normalizedCandidate.StartsWith(normalizedRoot + "/", StringComparison.OrdinalIgnoreCase))
+            {
+                guesses.Add(normalizedRoot + "/" + normalizedCandidate);
+            }
+
+            foreach (string guess in guesses.ToList())
+            {
+                foreach (string extension in extensions)
+                {
+                    if (!guess.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                    {
+                        guesses.Add(guess + extension);
+                    }
+                }
+            }
+
+            foreach (string guess in guesses.Distinct(StringComparer.OrdinalIgnoreCase))
+            {
+                try
+                {
+                    using Stream stream = assetManager.Read(guess);
+                    if (stream != null)
+                    {
+                        return guess;
+                    }
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
         }
 	}
 }

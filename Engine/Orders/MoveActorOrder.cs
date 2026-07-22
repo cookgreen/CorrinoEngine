@@ -1,22 +1,23 @@
 using CorrinoEngine.Cameras;
-using CorrinoEngine.Core;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 
 namespace CorrinoEngine.Orders
 {
-    public class SelectUnitOrder : Order
+    public class MoveActorOrder : Order
     {
         public override event Action<string, object> OrderExecuted;
 
-        public SelectUnitOrder(Camera cam, KeyboardState ks, MouseState ms) : base(cam, ks, ms)
+        public MoveActorOrder(Camera cam, KeyboardState ks, MouseState ms)
+            : base(cam, ks, ms)
         {
         }
 
         public override void Execute(object args)
         {
-            var actor = args as Actor;
-            OrderExecuted?.Invoke("SelectActor", actor);
+            Vector3 position = (Vector3)args;
+            OrderExecuted?.Invoke("MoveActor", new object[] { position });
         }
     }
 }

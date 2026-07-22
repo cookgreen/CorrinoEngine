@@ -1,7 +1,8 @@
-﻿using CorrinoEngine.Cameras;
+using CorrinoEngine.Cameras;
 using CorrinoEngine.Fields;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.PathFind;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using System;
 using System.Collections.Generic;
@@ -16,15 +17,46 @@ namespace CorrinoEngine.Core
         private ActorData actorData;
         private MeshInstance meshInstance;
         private List<Field> fields;
+        private Vector3 moveTarget;
+        private bool isSelected;
+        private float moveSpeed;
+        private float selectionRadius;
 
         public ActorData ActorData
         {
             get { return actorData; }
         }
+        public MeshInstance MeshInstance
+        {
+            get { return meshInstance; }
+        }
+        public Vector3 Position
+        {
+            get
+            {
+                if (meshInstance == null)
+                {
+                    return Vector3.Zero;
+                }
+
+                return meshInstance.Position;
+            }
+        }
+        public float SelectionRadius
+        {
+            get { return selectionRadius; }
+        }
+        public bool IsSelected
+        {
+            get { return isSelected; }
+        }
 
         public Actor(ActorData actorData)
         {
             this.actorData = actorData;
+            moveTarget = Vector3.Zero;
+            moveSpeed = 72;
+            selectionRadius = 36;
             parseFields();
         }
 
@@ -48,6 +80,7 @@ namespace CorrinoEngine.Core
         public void Spawn(MeshInstance meshInstance)
         {
             this.meshInstance = meshInstance;
+            moveTarget = meshInstance.Position;
         }
 
         public void Draw(FrameEventArgs args, Camera camera)
@@ -57,6 +90,7 @@ namespace CorrinoEngine.Core
 
         public void OnSelect()
         {
+            isSelected = true;
             foreach (var field in fields)
             {
                 if ((field as ISelectable) != null)
@@ -66,9 +100,34 @@ namespace CorrinoEngine.Core
             }
         }
 
+        public void OnDeselect()
+        {
+            isSelected = false;
+        }
+
+        public void MoveTo(Vector3 target)
+        {
+            moveTarget = target;
+        }
+
         public void Update(FrameEventArgs args)
         {
-            meshInstance.Update((float)args.Time);
+            if (meshInstance != null)
+            {
+                Vector3 delta = moveTarget - meshInstance.Position;
+                if (delta.LengthSquared > 1f)
+                {
+                    Vector3 step = delta.Normalized() * moveSpeed * (float)args.Time;
+                    if (step.LengthSquared >= delta.LengthSquared)
+                    {
+                        meshInstance.Position = moveTarget;
+                    }
+                    else
+                    {
+                        meshInstance.Position += step;
+                    }
+                }
+            }
         }
     }
 }

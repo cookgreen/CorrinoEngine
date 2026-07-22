@@ -5,6 +5,8 @@ Map:
 	Height: 10
 	TileSize: 64
 	TileMesh: sand
+	TileTexture: sand
+	TileUvScale: 4
 
 Actor@1:
 	Type: atreides-conyard
@@ -23,3 +25,21 @@ Actor@3:
 	X: 288
 	Y: 0
 	Z: 448
+
+Actor@4:
+	Type: atreides-infantry
+	X: 192
+	Y: 0
+	Z: 224
+
+Actor@5:
+	Type: atreides-infantry
+	X: 224
+	Y: 0
+	Z: 256
+
+Actor@6:
+	Type: atreides-infantry
+	X: 256
+	Y: 0
+	Z: 224

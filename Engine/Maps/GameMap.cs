@@ -54,6 +54,7 @@ namespace CorrinoEngine.Maps
                     Tiles.Add(new GameMapTile()
                     {
                         Mesh = Manifest.TileMesh,
+                        Material = Manifest.TileMesh,
                         X = x * Manifest.TileSize + Manifest.TileSize * 0.5f,
                         Y = 0,
                         Z = z * Manifest.TileSize + Manifest.TileSize * 0.5f
@@ -70,6 +71,22 @@ namespace CorrinoEngine.Maps
                 if (subNode.Name == "Mesh")
                 {
                     tile.Mesh = subNode.Value;
+                }
+                else if (subNode.Name == "Material")
+                {
+                    tile.Material = subNode.Value;
+                }
+                else if (subNode.Name == "Texture")
+                {
+                    tile.Texture = subNode.Value;
+                }
+                else if (subNode.Name == "Resource")
+                {
+                    tile.Resource = subNode.Value;
+                }
+                else if (subNode.Name == "UvScale")
+                {
+                    tile.UvScale = ParseFloat(subNode.Value);
                 }
                 else if (subNode.Name == "X")
                 {
@@ -128,6 +145,10 @@ namespace CorrinoEngine.Maps
     public class GameMapTile
     {
         public string Mesh { get; set; }
+        public string Material { get; set; }
+        public string Texture { get; set; }
+        public string Resource { get; set; }
+        public float UvScale { get; set; } = 1;
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
@@ -149,12 +170,16 @@ namespace CorrinoEngine.Maps
         public int Height { get; set; }
         public float TileSize { get; set; }
         public string TileMesh { get; set; }
+        public string TileTexture { get; set; }
+        public string TileResource { get; set; }
+        public float TileUvScale { get; set; }
 
         public GameMapManifest()
         {
             Width = 12;
             Height = 12;
             TileSize = 48;
+            TileUvScale = 1;
         }
 
         public void Parse(string mapYamlFile)
@@ -191,6 +216,18 @@ namespace CorrinoEngine.Maps
                 else if (node.Name == "TileMesh")
                 {
                     TileMesh = node.Value;
+                }
+                else if (node.Name == "TileTexture")
+                {
+                    TileTexture = node.Value;
+                }
+                else if (node.Name == "TileResource")
+                {
+                    TileResource = node.Value;
+                }
+                else if (node.Name == "TileUvScale")
+                {
+                    TileUvScale = float.Parse(node.Value, CultureInfo.InvariantCulture);
                 }
             }
         }

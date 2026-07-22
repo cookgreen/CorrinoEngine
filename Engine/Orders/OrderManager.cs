@@ -1,11 +1,9 @@
-﻿using CorrinoEngine.Cameras;
+using CorrinoEngine.Cameras;
 using CorrinoEngine.Core;
+using OpenTK.Mathematics;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace CorrinoEngine.Orders
 {
@@ -30,22 +28,33 @@ namespace CorrinoEngine.Orders
 
         public void Update()
         {
-            if (ks.IsKeyDown(Keys.X) && ms.WasButtonDown(MouseButton.Button1))//X + Left Mouse = Place building
+            if (ks.IsKeyDown(Keys.X) && world.ConsumeLeftClick())//X + Left Mouse = Place building
             {
                 Order newOrder = new PlaceBuildingOrder(cam, ks, ms);
                 newOrder.OrderExecuted += NewOrder_OrderExecuted;
                 newOrder.Execute("atreides-barrack");
                 historyOrders.Push(newOrder);
+                return;
             }
-            if(ms.WasButtonDown(MouseButton.Button1))
+
+            if (world.ConsumeLeftClick())
             {
-                MouseRay mouseRay = new MouseRay((int)ms.X, (int)ms.Y);
-                var queryResult = mouseRay.RayCastQuery();
-                if (queryResult.Count > 0)
+                var actor = world.QueryActorAtCursor();
+                Order newOrder = new SelectUnitOrder(cam, ks, ms);
+                newOrder.OrderExecuted += NewOrder_OrderExecuted;
+                newOrder.Execute(actor);
+                historyOrders.Push(newOrder);
+                return;
+            }
+
+            if (world.ConsumeRightClick())
+            {
+                Vector3 groundPosition = world.QueryGroundAtCursor();
+                if (groundPosition != Vector3.Zero)
                 {
-                    Order newOrder = new SelectUnitOrder(cam, ks, ms);
+                    Order newOrder = new MoveActorOrder(cam, ks, ms);
                     newOrder.OrderExecuted += NewOrder_OrderExecuted;
-                    newOrder.Execute(queryResult);
+                    newOrder.Execute(groundPosition);
                     historyOrders.Push(newOrder);
                 }
             }
