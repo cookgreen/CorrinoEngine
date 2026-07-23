@@ -11,17 +11,19 @@ namespace CorrinoEngine.Renderer
 {
     public class HudRenderer : IDisposable
     {
-        private const float BuildPanelWidth = 430f;
-        private const float BuildPanelHeight = 220f;
+        private const float BuildPanelWidth = 500f;
+        private const float BuildPanelHeight = 248f;
         private const float BuildPanelPadding = 14f;
-        private const float BuildItemHeight = 28f;
+        private const float BuildIconSize = 72f;
         private const float QueueItemHeight = 24f;
         private const float BuildButtonWidth = 92f;
         private const float BuildButtonHeight = 28f;
         private const float CancelButtonWidth = 92f;
         private const float CancelButtonHeight = 28f;
         private const float PagerButtonWidth = 26f;
-        private const int VisibleBuildItems = 5;
+        private const int VisibleBuildColumns = 2;
+        private const int VisibleBuildRows = 3;
+        private const int VisibleBuildItems = VisibleBuildColumns * VisibleBuildRows;
         private const int VisibleQueueItems = 5;
 
         private Vector2 viewportSize;
@@ -180,7 +182,7 @@ namespace CorrinoEngine.Renderer
             textRenderer.Clear(Color.Transparent);
 
             textRenderer.DrawString("Corrino HUD", titleFont, accentBrush, new PointF(24, 20));
-            textRenderer.DrawString("LMB: select    RMB: move    X + LMB: place building", bodyFont, whiteBrush, new PointF(24, 56));
+            textRenderer.DrawString("LMB: select    RMB: move    Shift+A: asset browser", bodyFont, whiteBrush, new PointF(24, 56));
             string modeText = world.IsInBuildingPlacementMode
                 ? $"Current mode: placing {world.PendingPlacementActorTypeName} (LMB confirm / RMB cancel)"
                 : "Current mode: RTS prototype";
@@ -442,7 +444,7 @@ namespace CorrinoEngine.Renderer
             ClampBuildPage(world);
             ClampQueuePage(world);
             textRenderer.DrawString("Build Queue", titleFont, whiteBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 10));
-            textRenderer.DrawString("Click or press 1-5 to select, Enter to build.", smallFont, dimBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 38));
+            textRenderer.DrawString("Click a card to select, then click Build.", smallFont, dimBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 38));
             textRenderer.DrawString($"Credits: {world.Credits}", bodyFont, accentBrush, new PointF(panel.Right - 140, panel.Y + 12));
 
             textRenderer.DrawString($"Build {buildPageIndex + 1}/{GetBuildPageCount(world)}", smallFont, dimBrush, new PointF(panel.X + 110, panel.Y + 14));
@@ -458,8 +460,10 @@ namespace CorrinoEngine.Renderer
                 RectangleF row = GetBuildItemRect(i);
                 string label = world.GetActorDisplayName(actorData);
                 string desc = $"{world.GetActorCost(actorData.TypeName)} cr";
-                textRenderer.DrawString($"{i + 1}. {label}", bodyFont, whiteBrush, new PointF(row.X + 8, row.Y + 4));
-                textRenderer.DrawString(desc, smallFont, dimBrush, new PointF(row.Right - 52, row.Y + 6));
+                string shortLabel = label.Length > 14 ? label.Substring(0, 14) + "..." : label;
+                textRenderer.DrawString($"{i + 1}", smallFont, dimBrush, new PointF(row.X + 6, row.Y + 6));
+                textRenderer.DrawString(shortLabel, smallFont, whiteBrush, new PointF(row.X + 8, row.Bottom - 28));
+                textRenderer.DrawString(desc, smallFont, accentBrush, new PointF(row.X + 8, row.Bottom - 14));
             }
 
             textRenderer.DrawString("Queue", bodyFont, whiteBrush, new PointF(GetQueuePanelLeft(), panel.Y + 38));
@@ -488,7 +492,7 @@ namespace CorrinoEngine.Renderer
 
             string selectedBuild = string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName)
                 ? "No build selected"
-                : "Queued: " + world.SelectedBuildActorTypeName;
+                : "Selected: " + world.GetActorDisplayName(world.GetActorData(world.SelectedBuildActorTypeName));
             textRenderer.DrawString(selectedBuild, smallFont, accentBrush, new PointF(panel.X + BuildPanelPadding, panel.Bottom - 26));
 
             ProductionOrder currentProduction = world.GetSelectedProduction();
@@ -518,11 +522,13 @@ namespace CorrinoEngine.Renderer
         private RectangleF GetBuildItemRect(int index)
         {
             RectangleF panel = GetBuildPanelRect();
+            int column = index % VisibleBuildColumns;
+            int rowIndex = index / VisibleBuildColumns;
             return new RectangleF(
-                panel.X + BuildPanelPadding,
-                panel.Y + 62 + index * (BuildItemHeight + 6),
-                186,
-                BuildItemHeight);
+                panel.X + BuildPanelPadding + column * (BuildIconSize + 10),
+                panel.Y + 62 + rowIndex * (BuildIconSize + 10),
+                BuildIconSize,
+                BuildIconSize);
         }
 
         private RectangleF GetBuildButtonRect()
@@ -572,7 +578,7 @@ namespace CorrinoEngine.Renderer
         private float GetQueuePanelLeft()
         {
             RectangleF panel = GetBuildPanelRect();
-            return panel.X + 214f;
+            return panel.X + BuildPanelPadding + VisibleBuildColumns * (BuildIconSize + 10) + 24f;
         }
 
         private int GetQueueItemIndexAt(Vector2 mousePosition, World world)
@@ -707,13 +713,6 @@ namespace CorrinoEngine.Renderer
             else if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.D5) && visibleBuildActors.Count > 4)
             {
                 world.SelectBuildActor(visibleBuildActors[4].TypeName);
-            }
-
-            if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.Enter)
-                && !string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName)
-                && world.CanAffordSelectedBuild())
-            {
-                world.EnqueueBuild(world.SelectedBuildActorTypeName);
             }
         }
 

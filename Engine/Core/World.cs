@@ -317,6 +317,12 @@ namespace CorrinoEngine.Core
                     using frmAssetBrowser assetBrowser = new frmAssetBrowser(assetManager);
                     assetBrowser.ShowDialog();
                 }
+
+                if (ks.IsKeyDown(Keys.I) && ks.IsKeyDown(Keys.LeftShift))
+                {
+                    using frmMapImport mapImport = new frmMapImport(assetManager);
+                    mapImport.ShowDialog();
+                }
             }
         }
 
@@ -883,7 +889,7 @@ namespace CorrinoEngine.Core
 
         public bool CanActorMove(Actor actor)
         {
-            return actor != null && !CanActorProduce(actor);
+            return actor != null && actor.CanMove && !CanActorProduce(actor);
         }
 
         private void SetBuildFeedback(string message)

@@ -16,6 +16,9 @@
     <Compile Update="Forms\frmInGameUnitQueue.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Forms\frmMapImport.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Update="Forms\frmModelSelector.cs">
       <SubType>Form</SubType>
     </Compile>

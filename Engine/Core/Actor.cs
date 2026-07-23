@@ -51,6 +51,20 @@ namespace CorrinoEngine.Core
         {
             get { return isSelected; }
         }
+        public bool IsBuilding
+        {
+            get
+            {
+                return HasField("ProvideBuildings") || !CanMove;
+            }
+        }
+        public bool CanMove
+        {
+            get
+            {
+                return !HasField("ProvideBuildings");
+            }
+        }
         public IReadOnlyCollection<ProductionOrder> ProductionQueue
         {
             get { return productionQueue.ToArray(); }
@@ -64,6 +78,10 @@ namespace CorrinoEngine.Core
             moveSpeed = 72;
             selectionRadius = 36;
             parseFields();
+            if (HasField("ProvideBuildings"))
+            {
+                selectionRadius = 72;
+            }
         }
 
         private void parseFields()
