@@ -127,6 +127,8 @@ namespace CorrinoEngine
 
         public void Resize(Vector2 size)
         {
+            world?.Resize(size);
+
             if (hudRenderer != null)
             {
                 hudRenderer.Resize(size);

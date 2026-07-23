@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.Assets;
+using CorrinoEngine.Assets;
 using CorrinoEngine.Cameras;
 using CorrinoEngine.Fields;
 using CorrinoEngine.FileSystem;
@@ -175,6 +175,7 @@ namespace CorrinoEngine.Core
                 Position = new Vector3(0, 1, -1) * 128
             };
             camera.Size = viewportSize;
+            camera.Update();
 
             camController = new RTSCameraController(camera);
             camController.InjectKeyborardState(ks);
@@ -193,6 +194,12 @@ namespace CorrinoEngine.Core
         {
             LoadDefaultMap();
             sceneManager.StartNewScene("InnerGame");
+        }
+
+        public void Resize(Vector2 viewportSize)
+        {
+            camera.Size = viewportSize;
+            camera.Update();
         }
 
         private void OrderManager_OrderExecuted(string orderName, object orderParams)
@@ -277,7 +284,7 @@ namespace CorrinoEngine.Core
 
         public void Update(FrameEventArgs args)
         {
-            camController.Update();
+            camController.Update((float)args.Time);
             orderManager.Update();
             UpdateProductionQueues((float)args.Time);
             UpdateBuildFeedback((float)args.Time);
@@ -343,6 +350,7 @@ namespace CorrinoEngine.Core
 
             currentMap = new GameMap();
             currentMap.Load(mapPath);
+            UpdateCameraBounds(currentMap);
 
             terrain = BuildTerrain(currentMap);
             terrainRenderer.RenderTerrain(terrain);
@@ -356,6 +364,22 @@ namespace CorrinoEngine.Core
 
                 SpawnActor(CreateActor(actor.Type), new Vector3(actor.X, actor.Y, actor.Z));
             }
+        }
+
+        private void UpdateCameraBounds(GameMap map)
+        {
+            if (camController is not RTSCameraController rtsCameraController || map?.Manifest == null)
+            {
+                return;
+            }
+
+            float tileSize = map.Manifest.TileSize > 0 ? map.Manifest.TileSize : 48f;
+            float padding = tileSize * 2f;
+            float width = map.Manifest.Width * tileSize;
+            float height = map.Manifest.Height * tileSize;
+            rtsCameraController.SetMapBounds(
+                new Vector2(-padding, -padding),
+                new Vector2(width + padding, height + padding));
         }
 
         private Terrain BuildTerrain(GameMap map)

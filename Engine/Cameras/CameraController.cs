@@ -1,4 +1,4 @@
-﻿using OpenTK.Windowing.GraphicsLibraryFramework;
+using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -28,7 +28,7 @@ namespace CorrinoEngine.Cameras
             this.ks = ks;
         }
 
-        public virtual void Update()
+        public virtual void Update(float deltaTime)
         {
             camera.Update();
         }

@@ -37,10 +37,15 @@ namespace CorrinoEngine
 
         protected override void OnLoad()
 		{
+			base.OnLoad();
+			GL.Viewport(0, 0, Size.X, Size.Y);
+			game.StartNewGame(Size, MouseState, KeyboardState);
+			game.Resize(Size);
 		}
 
         protected override void OnResize(ResizeEventArgs args)
 		{
+			base.OnResize(args);
 			GL.Viewport(0, 0, args.Width, args.Height);
 			game.StartNewGame(args.Size, MouseState, KeyboardState);
 			game.Resize(args.Size);
@@ -48,6 +53,8 @@ namespace CorrinoEngine
 
 		protected override void OnRenderFrame(FrameEventArgs args)
 		{
+			base.OnRenderFrame(args);
+			GL.Viewport(0, 0, Size.X, Size.Y);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			game.RenderFrame();
 			Context.SwapBuffers();
