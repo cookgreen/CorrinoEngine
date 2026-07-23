@@ -15,6 +15,11 @@ namespace LibEmperor
 		{
 			this.headerStream = headerStream;
 			this.dataStream = dataStream;
+			if (this.headerStream.CanSeek)
+				this.headerStream.Position = 0;
+			if (this.dataStream.CanSeek)
+				this.dataStream.Position = 0;
+
 			var headerReader = new BinaryReader(headerStream);
 			var dataReader = new BinaryReader(dataStream);
 

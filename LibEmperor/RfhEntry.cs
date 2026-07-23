@@ -6,6 +6,8 @@ namespace LibEmperor
 
 	public class RfhEntry
 	{
+		private const int DataSectionPrefixSize = 6;
+
 		[Flags]
 		private enum Flags
 		{
@@ -25,12 +27,18 @@ namespace LibEmperor
 		public RfhEntry(BinaryReader headerReader, BinaryReader dataReader)
 		{
 			this.reader = dataReader;
-			var nameLength = headerReader.ReadInt32();
-			this.DateTime = DateTime.FromFileTime(headerReader.ReadInt32());
+			int nameLength = headerReader.ReadInt32();
+			int rawFileTime = headerReader.ReadInt32();
 			this.flags = (Flags) headerReader.ReadInt32();
 			this.compressedSize = headerReader.ReadInt32();
 			this.uncompressedSize = headerReader.ReadInt32();
 			this.offset = headerReader.ReadInt32();
+			if (nameLength < 0)
+				throw new Exception("Invalid RFH entry name length.");
+			if (this.compressedSize < 0 || this.uncompressedSize < 0 || this.offset < 0)
+				throw new Exception("Invalid RFH entry size or offset.");
+
+			this.DateTime = TryReadFileTime(rawFileTime);
 			this.Path = new string(headerReader.ReadChars(nameLength)).Split('\0')[0];
 
 			if (this.flags != 0 && this.flags != Flags.Compressed)
@@ -39,14 +47,47 @@ namespace LibEmperor
 
 		public byte[] Read()
 		{
-			this.reader.BaseStream.Position = this.offset + 6;
+			long dataOffset = (long)this.offset + DataSectionPrefixSize;
+			if (dataOffset < 0 || dataOffset > this.reader.BaseStream.Length)
+				throw new EndOfStreamException($"RFH entry '{this.Path}' has invalid data offset {dataOffset}.");
+
+			this.reader.BaseStream.Position = dataOffset;
+			byte[] rawBytes = ReadExactBytes(this.reader, this.compressedSize, this.Path);
 
 			if ((this.flags & Flags.Compressed) == 0)
-				return this.reader.ReadBytes(this.compressedSize);
+				return rawBytes;
 
-			var deflateStream = new DeflateStream(this.reader.BaseStream, CompressionMode.Decompress);
-			byte[] bytes = new byte[this.uncompressedSize];
-			deflateStream.Read(bytes);
+			using var compressedStream = new MemoryStream(rawBytes, writable: false);
+			using var deflateStream = new DeflateStream(compressedStream, CompressionMode.Decompress);
+			using var outputStream = new MemoryStream(this.uncompressedSize > 0 ? this.uncompressedSize : rawBytes.Length * 2);
+			deflateStream.CopyTo(outputStream);
+			byte[] bytes = outputStream.ToArray();
+			if (this.uncompressedSize > 0 && bytes.Length != this.uncompressedSize)
+				throw new EndOfStreamException($"RFH entry '{this.Path}' decompressed to {bytes.Length} bytes, expected {this.uncompressedSize}.");
+
+			return bytes;
+		}
+
+		private static DateTime TryReadFileTime(int rawFileTime)
+		{
+			try
+			{
+				return DateTime.FromFileTime(rawFileTime);
+			}
+			catch
+			{
+				return DateTime.MinValue;
+			}
+		}
+
+		private static byte[] ReadExactBytes(BinaryReader reader, int count, string path)
+		{
+			if (count == 0)
+				return Array.Empty<byte>();
+
+			byte[] bytes = reader.ReadBytes(count);
+			if (bytes.Length != count)
+				throw new EndOfStreamException($"RFH entry '{path}' expected {count} bytes but only read {bytes.Length}.");
 
 			return bytes;
 		}

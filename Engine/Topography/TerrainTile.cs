@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.Graphics.Mesh;
+using CorrinoEngine.Graphics.Mesh;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,6 +13,7 @@ namespace CorrinoEngine.Topography
         private int x;
         private int y;
         private int z;
+        private bool isBuildable;
 
         public MeshInstance MeshInstance
         {
@@ -34,12 +35,18 @@ namespace CorrinoEngine.Topography
             get { return z; }
         }
 
-        public TerrainTile(MeshInstance meshInstance, int x, int y, int z)
+        public bool IsBuildable
+        {
+            get { return isBuildable; }
+        }
+
+        public TerrainTile(MeshInstance meshInstance, int x, int y, int z, bool isBuildable = true)
         {
             this.meshInstance = meshInstance;
             this.x = x;
             this.y = y;
             this.z = z;
+            this.isBuildable = isBuildable;
         }
     }
 }

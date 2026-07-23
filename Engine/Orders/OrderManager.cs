@@ -28,6 +28,23 @@ namespace CorrinoEngine.Orders
 
         public void Update()
         {
+            if (world.IsInBuildingPlacementMode)
+            {
+                if (world.ConsumeLeftClick())
+                {
+                    world.TryConfirmPendingPlacement();
+                    return;
+                }
+
+                if (world.ConsumeRightClick())
+                {
+                    world.CancelPendingPlacement();
+                    return;
+                }
+
+                return;
+            }
+
             if (ks.IsKeyDown(Keys.X) && world.ConsumeLeftClick())//X + Left Mouse = Place building
             {
                 Order newOrder = new PlaceBuildingOrder(cam, ks, ms);

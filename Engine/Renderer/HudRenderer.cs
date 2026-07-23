@@ -21,6 +21,7 @@ namespace CorrinoEngine.Renderer
         private const float CancelButtonWidth = 92f;
         private const float CancelButtonHeight = 28f;
         private const float PagerButtonWidth = 26f;
+        private const int VisibleBuildItems = 5;
         private const int VisibleQueueItems = 5;
 
         private Vector2 viewportSize;
@@ -31,9 +32,19 @@ namespace CorrinoEngine.Renderer
         private readonly Brush whiteBrush;
         private readonly Brush accentBrush;
         private readonly Brush dimBrush;
-        private readonly Brush warningBrush;
+        private Brush warningBrush;
         private bool disposed;
+        private int buildPageIndex;
         private int queuePageIndex;
+        private float lastScrollValue;
+        private int hoveredBuildIndex;
+        private int hoveredQueueIndex;
+        private bool isHoveringBuildButton;
+        private bool isHoveringCancelButton;
+        private bool isHoveringBuildPrevButton;
+        private bool isHoveringBuildNextButton;
+        private bool isHoveringQueuePrevButton;
+        private bool isHoveringQueueNextButton;
 
         public HudRenderer(Vector2 viewportSize)
         {
@@ -46,7 +57,11 @@ namespace CorrinoEngine.Renderer
             accentBrush = new SolidBrush(Color.FromArgb(255, 220, 186, 109));
             dimBrush = new SolidBrush(Color.FromArgb(255, 180, 180, 180));
             warningBrush = new SolidBrush(Color.FromArgb(255, 225, 108, 108));
+            buildPageIndex = 0;
             queuePageIndex = 0;
+            lastScrollValue = 0;
+            hoveredBuildIndex = -1;
+            hoveredQueueIndex = -1;
         }
 
         public void Resize(Vector2 size)
@@ -104,7 +119,10 @@ namespace CorrinoEngine.Renderer
 
             textRenderer.DrawString("Corrino HUD", titleFont, accentBrush, new PointF(24, 20));
             textRenderer.DrawString("LMB: select    RMB: move    X + LMB: place building", bodyFont, whiteBrush, new PointF(24, 56));
-            textRenderer.DrawString("Current mode: RTS prototype", bodyFont, dimBrush, new PointF(24, 80));
+            string modeText = world.IsInBuildingPlacementMode
+                ? $"Current mode: placing {world.PendingPlacementActorTypeName} (LMB confirm / RMB cancel)"
+                : "Current mode: RTS prototype";
+            textRenderer.DrawString(modeText, bodyFont, dimBrush, new PointF(24, 80));
 
             string selectedTitle = "Selected: None";
             string selectedDesc = "No actor selected";
@@ -145,18 +163,33 @@ namespace CorrinoEngine.Renderer
             RectangleF buttonRect = GetBuildButtonRect();
             if (buttonRect.Contains(mousePosition.X, mousePosition.Y))
             {
-                if (!string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName))
+                if (!string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName) && world.CanAffordSelectedBuild())
                 {
                     world.EnqueueBuild(world.SelectedBuildActorTypeName);
+                    return true;
                 }
 
-                return true;
+                return false;
             }
 
             RectangleF cancelRect = GetCancelButtonRect();
             if (cancelRect.Contains(mousePosition.X, mousePosition.Y))
             {
                 world.CancelSelectedProduction();
+                return true;
+            }
+
+            RectangleF buildPrevRect = GetBuildPrevButtonRect();
+            if (buildPrevRect.Contains(mousePosition.X, mousePosition.Y))
+            {
+                buildPageIndex = Math.Max(0, buildPageIndex - 1);
+                return true;
+            }
+
+            RectangleF buildNextRect = GetBuildNextButtonRect();
+            if (buildNextRect.Contains(mousePosition.X, mousePosition.Y))
+            {
+                buildPageIndex = Math.Min(GetBuildPageCount(world) - 1, buildPageIndex + 1);
                 return true;
             }
 
@@ -177,7 +210,7 @@ namespace CorrinoEngine.Renderer
             int index = GetBuildItemIndexAt(mousePosition);
             if (index >= 0)
             {
-                var buildableActors = world.GetBuildableActors().ToList();
+                var buildableActors = GetVisibleBuildActors(world);
                 if (index < buildableActors.Count)
                 {
                     world.SelectBuildActor(buildableActors[index].TypeName);
@@ -199,6 +232,61 @@ namespace CorrinoEngine.Renderer
             }
 
             return true;
+        }
+
+        public void HandleScroll(World world, Vector2 mousePosition, float currentScrollValue)
+        {
+            if (!UIManager.Instance.IsBuildQueueVisible)
+            {
+                lastScrollValue = currentScrollValue;
+                return;
+            }
+
+            RectangleF panelRect = GetBuildPanelRect();
+            if (!panelRect.Contains(mousePosition.X, mousePosition.Y))
+            {
+                lastScrollValue = currentScrollValue;
+                return;
+            }
+
+            UpdateHoverState(world, mousePosition);
+            float delta = currentScrollValue - lastScrollValue;
+            if (delta > 0.01f)
+            {
+                if (IsBuildColumn(mousePosition))
+                {
+                    buildPageIndex = Math.Max(0, buildPageIndex - 1);
+                }
+                else
+                {
+                    queuePageIndex = Math.Max(0, queuePageIndex - 1);
+                }
+            }
+            else if (delta < -0.01f)
+            {
+                if (IsBuildColumn(mousePosition))
+                {
+                    buildPageIndex = Math.Min(GetBuildPageCount(world) - 1, buildPageIndex + 1);
+                }
+                else
+                {
+                    queuePageIndex = Math.Min(GetQueuePageCount(world) - 1, queuePageIndex + 1);
+                }
+            }
+
+            lastScrollValue = currentScrollValue;
+        }
+
+        public void UpdateInteraction(World world, Vector2 mousePosition)
+        {
+            if (!UIManager.Instance.IsBuildQueueVisible)
+            {
+                ClearHoverState();
+                return;
+            }
+
+            UpdateHoverState(world, mousePosition);
+            HandleBuildShortcuts(world);
         }
 
         private void DrawTextOverlay()
@@ -234,50 +322,62 @@ namespace CorrinoEngine.Renderer
             }
 
             RectangleF panel = GetBuildPanelRect();
+            ClampBuildPage(world);
             ClampQueuePage(world);
             DrawRect(panel.X, panel.Y, panel.Width, panel.Height, Color.FromArgb(210, 12, 16, 22));
             DrawRect(panel.X, panel.Y, panel.Width, 4, Color.FromArgb(220, 196, 160, 92));
 
-            var buildableActors = world.GetBuildableActors().ToList();
-            for (int i = 0; i < buildableActors.Count && i < 5; i++)
+            var buildableActors = GetVisibleBuildActors(world);
+            for (int i = 0; i < buildableActors.Count; i++)
             {
                 RectangleF row = GetBuildItemRect(i);
                 bool isSelected = string.Equals(world.SelectedBuildActorTypeName, buildableActors[i].TypeName, StringComparison.OrdinalIgnoreCase);
+                bool isHovered = i == hoveredBuildIndex;
                 DrawRect(
                     row.X,
                     row.Y,
                     row.Width,
                     row.Height,
-                    isSelected ? Color.FromArgb(220, 63, 79, 96) : Color.FromArgb(185, 26, 33, 40));
+                    isSelected
+                        ? Color.FromArgb(220, 63, 79, 96)
+                        : isHovered
+                            ? Color.FromArgb(205, 46, 57, 68)
+                            : Color.FromArgb(185, 26, 33, 40));
             }
 
             var queue = GetVisibleQueue(world);
             for (int i = 0; i < queue.Count; i++)
             {
                 RectangleF row = GetQueueItemRect(i);
-                bool isHead = i == 0;
+                bool isHead = IsVisibleQueueHead(world, queue[i]);
+                bool isHovered = i == hoveredQueueIndex;
                 DrawRect(
                     row.X,
                     row.Y,
                     row.Width,
                     row.Height,
-                    isHead ? Color.FromArgb(205, 77, 64, 36) : Color.FromArgb(180, 31, 34, 39));
+                    isHead
+                        ? Color.FromArgb(205, 77, 64, 36)
+                        : isHovered
+                            ? Color.FromArgb(195, 49, 56, 64)
+                            : Color.FromArgb(180, 31, 34, 39));
             }
 
             RectangleF button = GetBuildButtonRect();
             Color buttonColor = string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName)
                 ? Color.FromArgb(120, 55, 55, 55)
                 : world.CanAffordSelectedBuild()
-                    ? Color.FromArgb(220, 126, 97, 40)
+                    ? isHoveringBuildButton ? Color.FromArgb(235, 144, 109, 44) : Color.FromArgb(220, 126, 97, 40)
                     : Color.FromArgb(150, 88, 54, 54);
             DrawRect(button.X, button.Y, button.Width, button.Height, buttonColor);
 
             RectangleF cancelButton = GetCancelButtonRect();
             Color cancelColor = world.SelectedProductionQueueCount > 0
-                ? Color.FromArgb(220, 120, 54, 54)
+                ? isHoveringCancelButton ? Color.FromArgb(235, 142, 61, 61) : Color.FromArgb(220, 120, 54, 54)
                 : Color.FromArgb(120, 55, 55, 55);
             DrawRect(cancelButton.X, cancelButton.Y, cancelButton.Width, cancelButton.Height, cancelColor);
 
+            DrawBuildPager(world);
             DrawQueuePager(world);
 
             DrawProductionProgress(world);
@@ -291,19 +391,26 @@ namespace CorrinoEngine.Renderer
             }
 
             RectangleF panel = GetBuildPanelRect();
+            ClampBuildPage(world);
             ClampQueuePage(world);
             textRenderer.DrawString("Build Queue", titleFont, whiteBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 10));
-            textRenderer.DrawString("Click an entry to select, then click Build.", smallFont, dimBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 38));
+            textRenderer.DrawString("Click or press 1-5 to select, Enter to build.", smallFont, dimBrush, new PointF(panel.X + BuildPanelPadding, panel.Y + 38));
             textRenderer.DrawString($"Credits: {world.Credits}", bodyFont, accentBrush, new PointF(panel.Right - 140, panel.Y + 12));
 
-            var buildableActors = world.GetBuildableActors().ToList();
-            for (int i = 0; i < buildableActors.Count && i < 5; i++)
+            textRenderer.DrawString($"Build {buildPageIndex + 1}/{GetBuildPageCount(world)}", smallFont, dimBrush, new PointF(panel.X + 110, panel.Y + 14));
+            RectangleF buildPrev = GetBuildPrevButtonRect();
+            RectangleF buildNext = GetBuildNextButtonRect();
+            textRenderer.DrawString("<", bodyFont, whiteBrush, new PointF(buildPrev.X + 8, buildPrev.Y + 1));
+            textRenderer.DrawString(">", bodyFont, whiteBrush, new PointF(buildNext.X + 8, buildNext.Y + 1));
+
+            var buildableActors = GetVisibleBuildActors(world);
+            for (int i = 0; i < buildableActors.Count; i++)
             {
                 ActorData actorData = buildableActors[i];
                 RectangleF row = GetBuildItemRect(i);
                 string label = world.GetActorDisplayName(actorData);
                 string desc = $"{world.GetActorCost(actorData.TypeName)} cr";
-                textRenderer.DrawString(label, bodyFont, whiteBrush, new PointF(row.X + 8, row.Y + 4));
+                textRenderer.DrawString($"{i + 1}. {label}", bodyFont, whiteBrush, new PointF(row.X + 8, row.Y + 4));
                 textRenderer.DrawString(desc, smallFont, dimBrush, new PointF(row.Right - 52, row.Y + 6));
             }
 
@@ -345,6 +452,8 @@ namespace CorrinoEngine.Renderer
 
             if (!string.IsNullOrWhiteSpace(world.BuildFeedbackMessage))
             {
+                warningBrush?.Dispose();
+                warningBrush = new SolidBrush(Color.FromArgb((int)(255 * world.BuildFeedbackAlpha), 225, 108, 108));
                 textRenderer.DrawString(world.BuildFeedbackMessage, smallFont, warningBrush, new PointF(panel.X + BuildPanelPadding, panel.Bottom - 72));
             }
         }
@@ -390,7 +499,8 @@ namespace CorrinoEngine.Renderer
 
         private int GetBuildItemIndexAt(Vector2 mousePosition)
         {
-            for (int i = 0; i < 5; i++)
+            int visibleCount = GetVisibleBuildActorsCacheCount;
+            for (int i = 0; i < visibleCount; i++)
             {
                 if (GetBuildItemRect(i).Contains(mousePosition.X, mousePosition.Y))
                 {
@@ -450,8 +560,53 @@ namespace CorrinoEngine.Renderer
             bool canPrev = queuePageIndex > 0;
             bool canNext = queuePageIndex < GetQueuePageCount(world) - 1;
 
-            DrawRect(prev.X, prev.Y, prev.Width, prev.Height, canPrev ? Color.FromArgb(180, 55, 65, 75) : Color.FromArgb(100, 45, 45, 45));
-            DrawRect(next.X, next.Y, next.Width, next.Height, canNext ? Color.FromArgb(180, 55, 65, 75) : Color.FromArgb(100, 45, 45, 45));
+            DrawRect(prev.X, prev.Y, prev.Width, prev.Height, canPrev ? (isHoveringQueuePrevButton ? Color.FromArgb(210, 72, 84, 94) : Color.FromArgb(180, 55, 65, 75)) : Color.FromArgb(100, 45, 45, 45));
+            DrawRect(next.X, next.Y, next.Width, next.Height, canNext ? (isHoveringQueueNextButton ? Color.FromArgb(210, 72, 84, 94) : Color.FromArgb(180, 55, 65, 75)) : Color.FromArgb(100, 45, 45, 45));
+        }
+
+        private RectangleF GetBuildPrevButtonRect()
+        {
+            RectangleF panel = GetBuildPanelRect();
+            return new RectangleF(panel.X + 160, panel.Y + 10, PagerButtonWidth, 20);
+        }
+
+        private RectangleF GetBuildNextButtonRect()
+        {
+            RectangleF panel = GetBuildPanelRect();
+            return new RectangleF(panel.X + 190, panel.Y + 10, PagerButtonWidth, 20);
+        }
+
+        private void DrawBuildPager(World world)
+        {
+            RectangleF prev = GetBuildPrevButtonRect();
+            RectangleF next = GetBuildNextButtonRect();
+            bool canPrev = buildPageIndex > 0;
+            bool canNext = buildPageIndex < GetBuildPageCount(world) - 1;
+
+            DrawRect(prev.X, prev.Y, prev.Width, prev.Height, canPrev ? (isHoveringBuildPrevButton ? Color.FromArgb(210, 72, 84, 94) : Color.FromArgb(180, 55, 65, 75)) : Color.FromArgb(100, 45, 45, 45));
+            DrawRect(next.X, next.Y, next.Width, next.Height, canNext ? (isHoveringBuildNextButton ? Color.FromArgb(210, 72, 84, 94) : Color.FromArgb(180, 55, 65, 75)) : Color.FromArgb(100, 45, 45, 45));
+        }
+
+        private int GetBuildPageCount(World world)
+        {
+            int count = world.GetBuildableActors().Count();
+            return Math.Max(1, (int)Math.Ceiling(count / (float)VisibleBuildItems));
+        }
+
+        private void ClampBuildPage(World world)
+        {
+            buildPageIndex = Math.Clamp(buildPageIndex, 0, GetBuildPageCount(world) - 1);
+        }
+
+        private System.Collections.Generic.List<ActorData> GetVisibleBuildActors(World world)
+        {
+            ClampBuildPage(world);
+            var visible = world.GetBuildableActors()
+                .Skip(buildPageIndex * VisibleBuildItems)
+                .Take(VisibleBuildItems)
+                .ToList();
+            GetVisibleBuildActorsCacheCount = visible.Count;
+            return visible;
         }
 
         private int GetQueuePageCount(World world)
@@ -478,6 +633,84 @@ namespace CorrinoEngine.Renderer
         {
             ProductionOrder head = world.GetSelectedProduction();
             return head != null && order != null && head.Id == order.Id;
+        }
+
+        private int GetVisibleBuildActorsCacheCount { get; set; }
+
+        private void HandleBuildShortcuts(World world)
+        {
+            var visibleBuildActors = GetVisibleBuildActors(world);
+            if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.D1) && visibleBuildActors.Count > 0)
+            {
+                world.SelectBuildActor(visibleBuildActors[0].TypeName);
+            }
+            else if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.D2) && visibleBuildActors.Count > 1)
+            {
+                world.SelectBuildActor(visibleBuildActors[1].TypeName);
+            }
+            else if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.D3) && visibleBuildActors.Count > 2)
+            {
+                world.SelectBuildActor(visibleBuildActors[2].TypeName);
+            }
+            else if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.D4) && visibleBuildActors.Count > 3)
+            {
+                world.SelectBuildActor(visibleBuildActors[3].TypeName);
+            }
+            else if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.D5) && visibleBuildActors.Count > 4)
+            {
+                world.SelectBuildActor(visibleBuildActors[4].TypeName);
+            }
+
+            if (world.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.Enter)
+                && !string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName)
+                && world.CanAffordSelectedBuild())
+            {
+                world.EnqueueBuild(world.SelectedBuildActorTypeName);
+            }
+        }
+
+        private void UpdateHoverState(World world, Vector2 mousePosition)
+        {
+            hoveredBuildIndex = -1;
+            hoveredQueueIndex = -1;
+            isHoveringBuildButton = false;
+            isHoveringCancelButton = false;
+            isHoveringBuildPrevButton = false;
+            isHoveringBuildNextButton = false;
+            isHoveringQueuePrevButton = false;
+            isHoveringQueueNextButton = false;
+
+            RectangleF panelRect = GetBuildPanelRect();
+            if (!panelRect.Contains(mousePosition.X, mousePosition.Y))
+            {
+                return;
+            }
+
+            isHoveringBuildButton = GetBuildButtonRect().Contains(mousePosition.X, mousePosition.Y);
+            isHoveringCancelButton = GetCancelButtonRect().Contains(mousePosition.X, mousePosition.Y);
+            isHoveringBuildPrevButton = GetBuildPrevButtonRect().Contains(mousePosition.X, mousePosition.Y);
+            isHoveringBuildNextButton = GetBuildNextButtonRect().Contains(mousePosition.X, mousePosition.Y);
+            isHoveringQueuePrevButton = GetQueuePrevButtonRect().Contains(mousePosition.X, mousePosition.Y);
+            isHoveringQueueNextButton = GetQueueNextButtonRect().Contains(mousePosition.X, mousePosition.Y);
+            hoveredBuildIndex = GetBuildItemIndexAt(mousePosition);
+            hoveredQueueIndex = GetQueueItemIndexAt(mousePosition, world);
+        }
+
+        private void ClearHoverState()
+        {
+            hoveredBuildIndex = -1;
+            hoveredQueueIndex = -1;
+            isHoveringBuildButton = false;
+            isHoveringCancelButton = false;
+            isHoveringBuildPrevButton = false;
+            isHoveringBuildNextButton = false;
+            isHoveringQueuePrevButton = false;
+            isHoveringQueueNextButton = false;
+        }
+
+        private bool IsBuildColumn(Vector2 mousePosition)
+        {
+            return mousePosition.X < GetQueuePanelLeft();
         }
 
         private void DrawProductionProgress(World world)

@@ -1,6 +1,7 @@
 .vs/*
 */bin/
 */obj/
+thirdparty/*
 bin/net6.0-windows/*.exe
 bin/net6.0-windows/*.dll
 bin/net6.0-windows/*.json

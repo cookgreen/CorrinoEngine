@@ -113,6 +113,8 @@ namespace CorrinoEngine
         {
             if (hudRenderer != null)
             {
+                hudRenderer.UpdateInteraction(world, new Vector2(world.MouseX, world.MouseY));
+                hudRenderer.HandleScroll(world, new Vector2(world.MouseX, world.MouseY), world.MouseScrollY);
                 bool handled = hudRenderer.TryHandleLeftClick(world, new Vector2(world.MouseX, world.MouseY));
                 if (handled)
                 {

@@ -12,68 +12,66 @@ namespace LibEmperor
 		public XbfVertexAnimation(BinaryReader reader)
 		{
 			this.Length = reader.ReadInt32();
-			var entriesNegative = reader.ReadInt32();
-			var usedFrames = reader.ReadInt32();
+			int entriesNegative = reader.ReadInt32();
+			int usedFrames = reader.ReadInt32();
+			if (usedFrames < 0)
+				throw new Exception("Invalid XBF vertex animation frame count.");
 
-			var frameIds = new List<int>();
+			var frameIds = new List<int>(usedFrames);
 
-			for (var i = 0; i < usedFrames; i++)
+			for (int i = 0; i < usedFrames; i++)
 				frameIds.Add(reader.ReadInt32());
 
 			if (entriesNegative >= 0)
 				return;
 
-			// TODO what is this?
-			var unk = reader.ReadInt16();
-			var flags = reader.ReadUInt16();
-			var entries = reader.ReadInt32();
-
-			if (unk != 0 && unk != 2 && unk != 4 && unk != 5 && unk != 6 && unk != 7 && unk != 8 && unk != 9 && unk != 10)
-				throw new Exception("Unknown unk!");
-
-			if ((flags & 0b0111111111111111) != 0)
-				throw new Exception("Unknown flags!");
-
+			int kind = reader.ReadInt16();
+			uint flags = reader.ReadUInt16();
+			int entries = reader.ReadInt32();
+			if (usedFrames == 0)
+				return;
 			if (-entries != entriesNegative)
 				throw new Exception("Wrong entries!");
 
-			var numVertices = entries / usedFrames;
+			int numVertices = entries / usedFrames;
+			float coordinateDivisor = 1 << kind;
+			var usedPositions = new List<object[][]>(usedFrames);
 
-			for (var i = 0; i < usedFrames; i++)
+			for (int i = 0; i < usedFrames; i++)
 			{
 				var frameValues = new object[numVertices][];
 
-				for (var j = 0; j < numVertices; j++)
+				for (int j = 0; j < numVertices; j++)
 				{
-					// TODO find out what this is!
-					// What we can animate using vertex animations: position, normal, uv
-					var unk7a = reader.ReadSByte();
-					var unk7b = reader.ReadSByte();
-					var unk7c = reader.ReadSByte();
-					var unk7d = reader.ReadSByte();
-					var unk7e = reader.ReadSByte();
-					var unk7f = reader.ReadSByte();
-					var unk7g = reader.ReadSByte();
-					var unk7h = reader.ReadSByte();
-
-					frameValues[j] = new object[] {unk7a, unk7b, unk7c, unk7d, unk7e, unk7f, unk7g, unk7h};
-					//Console.WriteLine($"Vertex: {unk7a} {unk7b} {unk7c} {unk7d} {unk7e} {unk7f} {unk7g} {unk7h}");
+					float x = reader.ReadInt16() / coordinateDivisor;
+					float y = reader.ReadInt16() / coordinateDivisor;
+					float z = reader.ReadInt16() / coordinateDivisor;
+					reader.ReadInt16();
+					frameValues[j] = new object[] { x, y, z };
 				}
 
-				this.Frames.Add(frameIds[i], frameValues);
+				usedPositions.Add(frameValues);
 			}
 
-			if (flags == 0)
-				return;
-
-			for (var i = 0; i < this.Length; i++)
+			if (flags != 0)
 			{
-				// Every second is 0. Starts at 1, every next has has +(numVertices * 4). Max value is filled up till the end without a 0.
-				// Example for 10 vertices:
-				// 1,0,41,0,81,0,121,0,161,0,201,0,241,0,281,0,321,0,361,0,401,401,401,401,401,...
-				// Could be to use as some kind of fast access pointer...?
-				var unk8 = reader.ReadInt32();
-				//Console.WriteLine($"Map: {unk8}");
+				for (int i = 0; i < this.Length; i++)
+				{
+					int frameOffset = reader.ReadInt32();
+					if (frameOffset <= 0)
+						continue;
+
+					int usedIndex = (frameOffset - 1) / Math.Max(1, numVertices * 4);
+					if (usedIndex >= 0 && usedIndex < usedPositions.Count)
+						this.Frames[i] = usedPositions[usedIndex];
+				}
+			}
+			else
+			{
+				for (int i = 0; i < usedFrames; i++)
+				{
+					this.Frames[frameIds[i]] = usedPositions[i];
+				}
 			}
 		}
 	}

@@ -54,6 +54,10 @@ namespace CorrinoEngine.Core
         private MouseState ms;
         private int credits;
         private string buildFeedbackMessage;
+        private float buildFeedbackTimeLeft;
+        private Actor pendingPlacementActor;
+        private Vector3 pendingPlacementPosition;
+        private Vector2i pendingPlacementFootprint;
 
         public List<FactionInfo> FactionInfos
         {
@@ -83,6 +87,14 @@ namespace CorrinoEngine.Core
         {
             get { return ms.Y; }
         }
+        public float MouseScrollY
+        {
+            get { return ms.Scroll.Y; }
+        }
+        public KeyboardState KeyboardState
+        {
+            get { return ks; }
+        }
         public int Credits
         {
             get { return credits; }
@@ -94,6 +106,34 @@ namespace CorrinoEngine.Core
         public string BuildFeedbackMessage
         {
             get { return buildFeedbackMessage; }
+        }
+        public float BuildFeedbackAlpha
+        {
+            get
+            {
+                if (buildFeedbackTimeLeft <= 0)
+                {
+                    return 0;
+                }
+
+                return Math.Clamp(buildFeedbackTimeLeft / 2.5f, 0, 1);
+            }
+        }
+        public bool IsInBuildingPlacementMode
+        {
+            get { return pendingPlacementActor != null; }
+        }
+        public string PendingPlacementActorTypeName
+        {
+            get { return pendingPlacementActor?.ActorData?.TypeName; }
+        }
+        public Vector3 PendingPlacementPosition
+        {
+            get { return pendingPlacementPosition; }
+        }
+        public Vector2i PendingPlacementFootprint
+        {
+            get { return pendingPlacementFootprint; }
         }
 
         public bool IsEnableDebugMode
@@ -116,6 +156,9 @@ namespace CorrinoEngine.Core
             this.ks = ks;
             credits = 3000;
             buildFeedbackMessage = string.Empty;
+            buildFeedbackTimeLeft = 0;
+            pendingPlacementPosition = Vector3.Zero;
+            pendingPlacementFootprint = Vector2i.One;
 
             FieldManager.Instance.Init(modData);
 
@@ -221,7 +264,15 @@ namespace CorrinoEngine.Core
             {
                 terrainRenderer.RenderFrame(default, camera);
             }
-            worldRenderer.Render(camera);
+            worldRenderer.Render(
+                camera,
+                actors,
+                selectedActor,
+                pendingPlacementActor,
+                pendingPlacementPosition,
+                pendingPlacementFootprint,
+                currentMap?.Manifest?.TileSize ?? 48f,
+                IsPendingPlacementValid());
         }
 
         public void Update(FrameEventArgs args)
@@ -229,6 +280,8 @@ namespace CorrinoEngine.Core
             camController.Update();
             orderManager.Update();
             UpdateProductionQueues((float)args.Time);
+            UpdateBuildFeedback((float)args.Time);
+            UpdatePlacementPreview();
             if (terrain != null)
             {
                 terrainRenderer.UpdateFrame(args);
@@ -314,7 +367,7 @@ namespace CorrinoEngine.Core
             {
                 MeshInstance meshInstance = CreateTerrainMeshInstance(map, tile, tileSize);
                 meshInstance.Position = new Vector3(tile.X, tile.Y, tile.Z);
-                newTerrain.AppendTile(new TerrainTile(meshInstance, (int)tile.X, (int)tile.Y, (int)tile.Z));
+                newTerrain.AppendTile(new TerrainTile(meshInstance, (int)tile.X, (int)tile.Y, (int)tile.Z, ResolveTileBuildable(tile)));
             }
 
             return newTerrain;
@@ -406,6 +459,43 @@ namespace CorrinoEngine.Core
             return clicked;
         }
 
+        public bool TryConfirmPendingPlacement()
+        {
+            if (!IsInBuildingPlacementMode)
+            {
+                return false;
+            }
+
+            if (!CanPlacePendingBuildingAt(pendingPlacementPosition))
+            {
+                SetBuildFeedback("Cannot place building here.");
+                return true;
+            }
+
+            SpawnActor(pendingPlacementActor, pendingPlacementPosition);
+            pendingPlacementActor = null;
+            pendingPlacementPosition = Vector3.Zero;
+            pendingPlacementFootprint = Vector2i.One;
+            SetBuildFeedback("Building placed.");
+            return true;
+        }
+
+        public bool CancelPendingPlacement()
+        {
+            if (!IsInBuildingPlacementMode)
+            {
+                return false;
+            }
+
+            int refund = ResolveBuildCost(pendingPlacementActor.ActorData.TypeName);
+            credits += refund;
+            pendingPlacementActor = null;
+            pendingPlacementPosition = Vector3.Zero;
+            pendingPlacementFootprint = Vector2i.One;
+            SetBuildFeedback("Building placement cancelled.");
+            return true;
+        }
+
         public void SelectActor(Actor actor)
         {
             if (selectedActor != null)
@@ -421,7 +511,7 @@ namespace CorrinoEngine.Core
                 selectedActor.OnSelect();
             }
 
-            if (selectedActor != null && selectedActor.HasField("ProvideBuildings"))
+            if (CanActorProduce(selectedActor))
             {
                 UIManager.Instance.StartUI("BuildQueueUI");
             }
@@ -433,26 +523,22 @@ namespace CorrinoEngine.Core
 
         public IEnumerable<ActorData> GetBuildableActors()
         {
-            if (selectedActor == null)
+            return GetBuildableActors(selectedActor);
+        }
+
+        public IEnumerable<ActorData> GetBuildableActors(Actor producer)
+        {
+            if (producer == null || producer.ActorData == null)
             {
                 return Enumerable.Empty<ActorData>();
             }
 
-            object provideBuildingsField = selectedActor.GetFieldValue("ProvideBuildings");
-            if (provideBuildingsField == null)
-            {
-                return Enumerable.Empty<ActorData>();
-            }
-
-            string factionPrefix = provideBuildingsField.ToString();
-            if (string.IsNullOrWhiteSpace(factionPrefix))
-            {
-                return Enumerable.Empty<ActorData>();
-            }
+            string producerTypeName = producer.ActorData.TypeName;
+            string factionPrefix = producer.GetFieldValue("ProvideBuildings")?.ToString();
 
             return modData.Manifest.ActorDataList
-                .Where(o => o.TypeName.StartsWith(factionPrefix + "-", StringComparison.OrdinalIgnoreCase))
-                .Where(o => o.TypeName != selectedActor.ActorData.TypeName)
+                .Where(o => o.TypeName != producerTypeName)
+                .Where(o => CanProducerBuildActor(producerTypeName, factionPrefix, o))
                 .OrderBy(o => o.TypeName)
                 .ToList();
         }
@@ -461,6 +547,7 @@ namespace CorrinoEngine.Core
         {
             selectedBuildActorTypeName = actorTypeName;
             buildFeedbackMessage = string.Empty;
+            buildFeedbackTimeLeft = 0;
             UIManager.Instance.RefreshBuildQueueUI();
         }
 
@@ -488,25 +575,26 @@ namespace CorrinoEngine.Core
         {
             if (string.IsNullOrWhiteSpace(actorTypeName))
             {
-                buildFeedbackMessage = "Select a build item first.";
+                SetBuildFeedback("Select a build item first.");
                 return;
             }
 
             if (selectedActor == null)
             {
-                buildFeedbackMessage = "No producer selected.";
+                SetBuildFeedback("No producer selected.");
                 return;
             }
 
             int cost = ResolveBuildCost(actorTypeName);
             if (credits < cost)
             {
-                buildFeedbackMessage = $"Insufficient credits: need {cost}, have {credits}.";
+                SetBuildFeedback($"Insufficient credits: need {cost}, have {credits}.");
                 return;
             }
 
             credits -= cost;
             buildFeedbackMessage = string.Empty;
+            buildFeedbackTimeLeft = 0;
 
             selectedActor.EnqueueProduction(new ProductionOrder
             {
@@ -584,7 +672,17 @@ namespace CorrinoEngine.Core
                 return;
             }
 
+            if (!CanActorMove(selectedActor))
+            {
+                return;
+            }
+
             selectedActor.MoveTo(target);
+        }
+
+        public bool IsPendingPlacementValid()
+        {
+            return IsInBuildingPlacementMode && CanPlacePendingBuildingAt(pendingPlacementPosition);
         }
 
         private float ResolveTileUvScale(GameMap map, GameMapTile tile)
@@ -748,6 +846,36 @@ namespace CorrinoEngine.Core
             return credits >= ResolveBuildCost(selectedBuildActorTypeName);
         }
 
+        public bool CanActorProduce(Actor actor)
+        {
+            return GetBuildableActors(actor).Any();
+        }
+
+        public bool CanActorMove(Actor actor)
+        {
+            return actor != null && !CanActorProduce(actor);
+        }
+
+        private void SetBuildFeedback(string message)
+        {
+            buildFeedbackMessage = message ?? string.Empty;
+            buildFeedbackTimeLeft = string.IsNullOrWhiteSpace(buildFeedbackMessage) ? 0 : 2.5f;
+        }
+
+        private void UpdateBuildFeedback(float deltaTime)
+        {
+            if (buildFeedbackTimeLeft <= 0)
+            {
+                return;
+            }
+
+            buildFeedbackTimeLeft = Math.Max(0, buildFeedbackTimeLeft - deltaTime);
+            if (buildFeedbackTimeLeft <= 0)
+            {
+                buildFeedbackMessage = string.Empty;
+            }
+        }
+
         private void UpdateProductionQueues(float deltaTime)
         {
             foreach (var actor in actors.Where(o => o.ProductionQueue.Count > 0).ToList())
@@ -762,20 +890,203 @@ namespace CorrinoEngine.Core
                 if (order.Progress >= order.Duration)
                 {
                     actor.DequeueProduction();
-                    SpawnProducedActor(actor, order.ActorTypeName);
+                    FinishProducedActor(actor, order.ActorTypeName);
                 }
             }
         }
 
-        private void SpawnProducedActor(Actor producer, string actorTypeName)
+        private void FinishProducedActor(Actor producer, string actorTypeName)
         {
             if (string.IsNullOrWhiteSpace(actorTypeName))
             {
                 return;
             }
 
+            Actor producedActor = CreateActor(actorTypeName);
+            bool isStructure = CanActorProduce(producedActor);
+            if (isStructure)
+            {
+                pendingPlacementActor = producedActor;
+                pendingPlacementFootprint = ResolveFootprint(actorTypeName);
+                pendingPlacementPosition = SnapBuildingPosition(producer.Position + new Vector3(128, 0, 96));
+                SetBuildFeedback("Place the building with LMB or cancel with RMB.");
+                return;
+            }
+
             Vector3 spawnPosition = producer.Position + new Vector3(48, 0, 48);
-            SpawnActor(CreateActor(actorTypeName), spawnPosition);
+            SpawnActor(producedActor, spawnPosition);
+        }
+
+        private void UpdatePlacementPreview()
+        {
+            if (!IsInBuildingPlacementMode)
+            {
+                return;
+            }
+
+            pendingPlacementPosition = SnapBuildingPosition(QueryGroundAtCursor());
+        }
+
+        private Vector3 SnapBuildingPosition(Vector3 worldPosition)
+        {
+            const float gridSize = 32f;
+            return new Vector3(
+                MathF.Round(worldPosition.X / gridSize) * gridSize,
+                0,
+                MathF.Round(worldPosition.Z / gridSize) * gridSize);
+        }
+
+        private bool CanPlacePendingBuildingAt(Vector3 position)
+        {
+            if (!IsInBuildingPlacementMode)
+            {
+                return false;
+            }
+
+            float tileSize = currentMap?.Manifest?.TileSize > 0 ? currentMap.Manifest.TileSize : 48f;
+            Vector2i footprint = pendingPlacementFootprint;
+            var occupiedCells = GetFootprintCells(position, footprint, tileSize).ToList();
+            if (occupiedCells.Count == 0)
+            {
+                return false;
+            }
+
+            foreach (var cell in occupiedCells)
+            {
+                TerrainTile terrainTile = FindTerrainTileAtCell(cell, tileSize);
+                if (terrainTile == null || !terrainTile.IsBuildable)
+                {
+                    return false;
+                }
+            }
+
+            foreach (Actor actor in actors.Where(o => o.MeshInstance != null))
+            {
+                foreach (var cell in occupiedCells)
+                {
+                    Vector2 cellCenter = CellToWorld(cell, tileSize);
+                    float distance = Vector2.Distance(
+                        new Vector2(actor.Position.X, actor.Position.Z),
+                        cellCenter);
+                    float combinedRadius = actor.SelectionRadius + tileSize * 0.45f;
+                    if (distance < combinedRadius)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private Vector2i ResolveFootprint(string actorTypeName)
+        {
+            if (string.IsNullOrWhiteSpace(actorTypeName))
+            {
+                return Vector2i.One;
+            }
+
+            string lowerType = actorTypeName.ToLowerInvariant();
+            if (lowerType.Contains("conyard"))
+            {
+                return new Vector2i(3, 3);
+            }
+
+            if (lowerType.Contains("barrack"))
+            {
+                return new Vector2i(2, 2);
+            }
+
+            return new Vector2i(2, 2);
+        }
+
+        private bool ResolveTileBuildable(GameMapTile tile)
+        {
+            if (tile.Buildable.HasValue)
+            {
+                return tile.Buildable.Value;
+            }
+
+            string surface = $"{tile.Material} {tile.Texture} {tile.Mesh} {tile.Resource}".ToLowerInvariant();
+            if (surface.Contains("spice"))
+            {
+                return false;
+            }
+
+            if (surface.Contains("rock") || surface.Contains("concrete") || surface.Contains("slab"))
+            {
+                return true;
+            }
+
+            return surface.Contains("sand");
+        }
+
+        private IEnumerable<Vector2i> GetFootprintCells(Vector3 centerPosition, Vector2i footprint, float tileSize)
+        {
+            Vector2i centerCell = WorldToCell(centerPosition, tileSize);
+            int startX = centerCell.X - footprint.X / 2;
+            int startY = centerCell.Y - footprint.Y / 2;
+
+            for (int z = 0; z < footprint.Y; z++)
+            {
+                for (int x = 0; x < footprint.X; x++)
+                {
+                    yield return new Vector2i(startX + x, startY + z);
+                }
+            }
+        }
+
+        private TerrainTile FindTerrainTileAtCell(Vector2i cell, float tileSize)
+        {
+            if (terrain == null)
+            {
+                return null;
+            }
+
+            Vector2 cellCenter = CellToWorld(cell, tileSize);
+            return terrain.Tiles.FirstOrDefault(tile =>
+                MathF.Abs(tile.X - cellCenter.X) <= tileSize * 0.25f &&
+                MathF.Abs(tile.Z - cellCenter.Y) <= tileSize * 0.25f);
+        }
+
+        private Vector2i WorldToCell(Vector3 worldPosition, float tileSize)
+        {
+            return new Vector2i(
+                (int)MathF.Round((worldPosition.X - tileSize * 0.5f) / tileSize),
+                (int)MathF.Round((worldPosition.Z - tileSize * 0.5f) / tileSize));
+        }
+
+        private Vector2 CellToWorld(Vector2i cell, float tileSize)
+        {
+            return new Vector2(
+                cell.X * tileSize + tileSize * 0.5f,
+                cell.Y * tileSize + tileSize * 0.5f);
+        }
+
+        private bool CanProducerBuildActor(string producerTypeName, string factionPrefix, ActorData candidate)
+        {
+            string prerequisite = GetActorProperty(candidate, "Prerequisites");
+            if (!string.IsNullOrWhiteSpace(prerequisite))
+            {
+                return string.Equals(prerequisite, producerTypeName, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (!string.IsNullOrWhiteSpace(factionPrefix))
+            {
+                return candidate.TypeName.StartsWith(factionPrefix + "-", StringComparison.OrdinalIgnoreCase);
+            }
+
+            return false;
+        }
+
+        private string GetActorProperty(ActorData actorData, string propertyName)
+        {
+            if (actorData == null || actorData.DataField == null || !actorData.DataField.Properties.ContainsKey(propertyName))
+            {
+                return null;
+            }
+
+            return actorData.DataField.Properties[propertyName]?.ToString();
         }
 
         private float ResolveBuildDuration(string actorTypeName)

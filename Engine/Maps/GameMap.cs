@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.FileFormats;
+using CorrinoEngine.FileFormats;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -88,6 +88,10 @@ namespace CorrinoEngine.Maps
                 {
                     tile.UvScale = ParseFloat(subNode.Value);
                 }
+                else if (subNode.Name == "Buildable")
+                {
+                    tile.Buildable = ParseBool(subNode.Value);
+                }
                 else if (subNode.Name == "X")
                 {
                     tile.X = ParseFloat(subNode.Value);
@@ -140,6 +144,21 @@ namespace CorrinoEngine.Maps
 
             return float.Parse(value, CultureInfo.InvariantCulture);
         }
+
+        private static bool? ParseBool(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return null;
+            }
+
+            if (bool.TryParse(value, out bool boolValue))
+            {
+                return boolValue;
+            }
+
+            return null;
+        }
     }
 
     public class GameMapTile
@@ -149,6 +168,7 @@ namespace CorrinoEngine.Maps
         public string Texture { get; set; }
         public string Resource { get; set; }
         public float UvScale { get; set; } = 1;
+        public bool? Buildable { get; set; }
         public float X { get; set; }
         public float Y { get; set; }
         public float Z { get; set; }
