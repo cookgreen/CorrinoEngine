@@ -465,8 +465,24 @@ namespace CorrinoEngine.Core
             currentNavigationData = MapNavigationData.Build(mapXbf);
             currentLightingData = TryLoadLightingData(map);
             MapTerrainMaterialData terrainMaterialData = MapTerrainMaterialData.Load(assetManager, map, currentLightingData);
+            bool addedVisualTerrain = false;
+
+            try
+            {
+                Mesh cpfTerrainMesh = TerrainMeshFactory.CreateOriginalTerrainMesh(
+                    currentHeightField,
+                    terrainMaterialData,
+                    currentMapMax - currentMapMin,
+                    160);
+                newTerrain.AddLayer(new MeshInstance(cpfTerrainMesh));
+                addedVisualTerrain = true;
+            }
+            catch
+            {
+            }
+
             string sharedResource = ResolveOriginalMapMeshResource(map, mapXbfPath);
-            if (!string.IsNullOrWhiteSpace(sharedResource))
+            if (!addedVisualTerrain && !string.IsNullOrWhiteSpace(sharedResource))
             {
                 try
                 {

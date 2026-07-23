@@ -10,6 +10,7 @@ namespace CorrinoEngine.Maps
 {
     public class MapTerrainMaterialData : IDisposable
     {
+        public int BaseTexture { get; private set; }
         public int GroundColorTexture { get; private set; }
         public int GroundLightTexture { get; private set; }
         public Vector3 LightDirection { get; set; } = new Vector3(-0.25f, 1f, 0.35f);
@@ -31,6 +32,7 @@ namespace CorrinoEngine.Maps
                 }
             }
 
+            data.BaseTexture = LoadFallbackBaseTexture(assetManager);
             data.GroundColorTexture = LoadGroundColorTexture(assetManager, map);
             data.GroundLightTexture = LoadGroundLightTexture(assetManager, map);
             return data;
@@ -76,6 +78,30 @@ namespace CorrinoEngine.Maps
             }
 
             return CreateCompressedTexture(linear, InternalFormat.CompressedRgbaS3tcDxt3Ext, 2048, 2048);
+        }
+
+        private static int LoadFallbackBaseTexture(AssetManager assetManager)
+        {
+            string[] candidates =
+            {
+                "Textures/Sand.tga",
+                "Textures/sand.tga",
+                "Textures/SHR_Sand.tga",
+                "Textures/AT_Inf.tga"
+            };
+
+            foreach (string candidate in candidates)
+            {
+                try
+                {
+                    return assetManager.Load<Texture>(typeof(MapTerrainMaterialData), candidate).Id;
+                }
+                catch
+                {
+                }
+            }
+
+            return 0;
         }
 
         private static int LoadGroundLightTexture(AssetManager assetManager, GameMap map)

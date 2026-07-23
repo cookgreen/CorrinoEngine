@@ -10,12 +10,14 @@ namespace CorrinoEngine.UI
 {
     public class WorldHudScreen : UIScreen
     {
-        private const float BuildPanelWidth = 500f;
-        private const float BuildPanelHeight = 248f;
-        private const int VisibleBuildColumns = 2;
+        private const float BuildPanelWidth = 520f;
+        private const float BuildPanelHeight = 340f;
+        private const int VisibleBuildColumns = 3;
         private const int VisibleBuildRows = 3;
         private const int VisibleBuildItems = VisibleBuildColumns * VisibleBuildRows;
-        private const int VisibleQueueItems = 5;
+        private const string TabBuilding = "building";
+        private const string TabInfantry = "infantry";
+        private const string TabVehicle = "vehicle";
 
         private readonly World world;
         private readonly PanelWidget rootPanel;
@@ -24,17 +26,12 @@ namespace CorrinoEngine.UI
         private readonly PanelWidget topRightPanel;
         private readonly PanelWidget buildPanel;
         private readonly CardGridWidget<ActorData> buildGrid;
-        private readonly ListWidget<ProductionOrder> queueList;
-        private readonly ButtonWidget buildButton;
-        private readonly ButtonWidget cancelButton;
-        private readonly ButtonWidget buildPrevButton;
-        private readonly ButtonWidget buildNextButton;
-        private readonly ButtonWidget queuePrevButton;
-        private readonly ButtonWidget queueNextButton;
-        private readonly ProgressBarWidget progressBar;
+        private readonly ButtonWidget buildingTabButton;
+        private readonly ButtonWidget infantryTabButton;
+        private readonly ButtonWidget vehicleTabButton;
         private int buildPageIndex;
-        private int queuePageIndex;
         private bool isBuildPanelVisible;
+        private string selectedTab = TabBuilding;
 
         public WorldHudScreen(World world) : base("WorldHud")
         {
@@ -52,65 +49,34 @@ namespace CorrinoEngine.UI
             buildGrid = new CardGridWidget<ActorData>
             {
                 Columns = VisibleBuildColumns,
-                CardHeight = 72f,
+                CardHeight = 74f,
+                DrawLabels = false,
+                IconPadding = 10f,
                 IconSelector = actor => actor == null ? 0 : world.GetActorIconTexture(actor.TypeName),
-                TitleSelector = actor => world.GetActorDisplayName(actor),
-                SubtitleSelector = actor => $"{world.GetActorCost(actor.TypeName)} cr",
+                TitleSelector = actor => string.Empty,
+                SubtitleSelector = actor => string.Empty,
+                TooltipSelector = actor => BuildTooltip(actor),
                 SelectedSelector = actor => string.Equals(world.SelectedBuildActorTypeName, actor.TypeName, StringComparison.OrdinalIgnoreCase),
                 EnabledSelector = actor => actor != null,
-                ItemClicked = actor => world.SelectBuildActor(actor.TypeName)
-            };
-
-            queueList = new ListWidget<ProductionOrder>
-            {
-                ItemHeight = 24f,
-                IconSelector = order => order == null ? 0 : world.GetActorIconTexture(order.ActorTypeName),
-                TextSelector = order =>
+                ItemClicked = actor =>
                 {
-                    ActorData actorData = world.GetActorData(order.ActorTypeName);
-                    string label = world.GetActorDisplayName(actorData);
-                    if (world.GetSelectedProduction()?.Id == order.Id)
-                        return $"{label}  {(int)(world.GetSelectedProductionProgress01() * 100)}%";
-                    return $"{label}  Cancel";
-                },
-                ItemClicked = order => world.CancelSelectedProduction(order.Id)
-            };
-
-            buildButton = new ButtonWidget
-            {
-                Text = "Build",
-                HoverColor = Color.FromArgb(235, 144, 109, 44),
-                Clicked = () =>
-                {
-                    if (!string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName) && world.CanAffordSelectedBuild())
-                        world.EnqueueBuild(world.SelectedBuildActorTypeName);
+                    world.SelectBuildActor(actor.TypeName);
+                    if (world.CanAffordSelectedBuild())
+                        world.EnqueueBuild(actor.TypeName);
                 }
             };
-            cancelButton = new ButtonWidget
-            {
-                Text = "Cancel",
-                HoverColor = Color.FromArgb(235, 142, 61, 61),
-                Clicked = () => world.CancelSelectedProduction()
-            };
-            buildPrevButton = CreatePager("<", () => buildPageIndex = Math.Max(0, buildPageIndex - 1));
-            buildNextButton = CreatePager(">", () => buildPageIndex++);
-            queuePrevButton = CreatePager("<", () => queuePageIndex = Math.Max(0, queuePageIndex - 1));
-            queueNextButton = CreatePager(">", () => queuePageIndex++);
-            progressBar = new ProgressBarWidget();
+            buildingTabButton = CreateTabButton(TabBuilding, "building");
+            infantryTabButton = CreateTabButton(TabInfantry, "infantry");
+            vehicleTabButton = CreateTabButton(TabVehicle, "vehicle");
 
             rootPanel.AddChild(topLeftPanel);
             rootPanel.AddChild(bottomLeftPanel);
             rootPanel.AddChild(topRightPanel);
             rootPanel.AddChild(buildPanel);
+            buildPanel.AddChild(buildingTabButton);
+            buildPanel.AddChild(infantryTabButton);
+            buildPanel.AddChild(vehicleTabButton);
             buildPanel.AddChild(buildGrid);
-            buildPanel.AddChild(queueList);
-            buildPanel.AddChild(buildButton);
-            buildPanel.AddChild(cancelButton);
-            buildPanel.AddChild(buildPrevButton);
-            buildPanel.AddChild(buildNextButton);
-            buildPanel.AddChild(queuePrevButton);
-            buildPanel.AddChild(queueNextButton);
-            buildPanel.AddChild(progressBar);
         }
 
         public override void Layout(RectangleF viewport)
@@ -122,15 +88,10 @@ namespace CorrinoEngine.UI
             buildPanel.Layout(new RectangleF(viewport.Width - BuildPanelWidth - 16, viewport.Height - BuildPanelHeight - 16, BuildPanelWidth, BuildPanelHeight));
 
             RectangleF panel = buildPanel.Bounds;
-            buildGrid.Layout(new RectangleF(panel.X + 14, panel.Y + 62, 72f * VisibleBuildColumns + 10f, 72f * VisibleBuildRows + 20f));
-            queueList.Layout(new RectangleF(panel.X + 202, panel.Y + 62, panel.Width - 216, 24f * VisibleQueueItems + 24f));
-            buildPrevButton.Layout(new RectangleF(panel.X + 160, panel.Y + 10, 26, 20));
-            buildNextButton.Layout(new RectangleF(panel.X + 190, panel.Y + 10, 26, 20));
-            queuePrevButton.Layout(new RectangleF(panel.Right - 64, panel.Y + 36, 26, 20));
-            queueNextButton.Layout(new RectangleF(panel.Right - 34, panel.Y + 36, 26, 20));
-            cancelButton.Layout(new RectangleF(panel.Right - 14 - 92 - 92 - 8, panel.Bottom - 14 - 28, 92, 28));
-            buildButton.Layout(new RectangleF(panel.Right - 14 - 92, panel.Bottom - 14 - 28, 92, 28));
-            progressBar.Layout(new RectangleF(panel.X + 14, panel.Bottom - 62, panel.Width - 28, 10));
+            buildingTabButton.Layout(new RectangleF(panel.X + 0, panel.Y - 34, 120, 32));
+            infantryTabButton.Layout(new RectangleF(panel.X + 124, panel.Y - 34, 120, 32));
+            vehicleTabButton.Layout(new RectangleF(panel.X + 248, panel.Y - 34, 120, 32));
+            buildGrid.Layout(new RectangleF(panel.X + 22, panel.Y + 22, panel.Width - 44, panel.Height - 44));
         }
 
         public override void Update(UiInputState input)
@@ -141,24 +102,13 @@ namespace CorrinoEngine.UI
 
             if (isBuildPanelVisible && Math.Abs(input.ScrollDelta) > float.Epsilon && buildPanel.HitTest(input.MousePosition))
             {
-                if (input.MousePosition.X < queueList.Bounds.X)
-                    buildPageIndex += input.ScrollDelta > 0 ? -1 : 1;
-                else
-                    queuePageIndex += input.ScrollDelta > 0 ? -1 : 1;
+                buildPageIndex += input.ScrollDelta > 0 ? -1 : 1;
             }
 
             buildPageIndex = Math.Clamp(buildPageIndex, 0, GetBuildPageCount() - 1);
-            queuePageIndex = Math.Clamp(queuePageIndex, 0, GetQueuePageCount() - 1);
 
             buildGrid.SetItems(GetVisibleBuildActors());
-            queueList.SetItems(GetVisibleQueue());
-            buildButton.Enabled = !string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName) && world.CanAffordSelectedBuild();
-            cancelButton.Enabled = world.SelectedProductionQueueCount > 0;
-            buildNextButton.Enabled = buildPageIndex < GetBuildPageCount() - 1;
-            buildPrevButton.Enabled = buildPageIndex > 0;
-            queueNextButton.Enabled = queuePageIndex < GetQueuePageCount() - 1;
-            queuePrevButton.Enabled = queuePageIndex > 0;
-            progressBar.Value01 = world.GetSelectedProductionProgress01();
+            UpdateTabVisuals();
 
             if (isBuildPanelVisible && input.KeyboardState.IsKeyPressed(OpenTK.Windowing.GraphicsLibraryFramework.Keys.D1))
                 SelectVisibleBuildIndex(0);
@@ -206,74 +156,115 @@ namespace CorrinoEngine.UI
 
             RectangleF panel = buildPanel.Bounds;
             context.DrawRect?.Invoke(panel.X, panel.Y, panel.Width, 4, Color.FromArgb(220, 196, 160, 92));
-            context.TextRenderer?.DrawString("Build Queue", context.TitleFont, context.WhiteBrush, new PointF(panel.X + 14, panel.Y + 10));
-            context.TextRenderer?.DrawString("Click a card to select, then click Build.", context.SmallFont, context.DimBrush, new PointF(panel.X + 14, panel.Y + 38));
-            context.TextRenderer?.DrawString($"Credits: {world.Credits}", context.BodyFont, context.AccentBrush, new PointF(panel.Right - 140, panel.Y + 12));
-            context.TextRenderer?.DrawString($"Build {buildPageIndex + 1}/{GetBuildPageCount()}", context.SmallFont, context.DimBrush, new PointF(panel.X + 110, panel.Y + 14));
-            context.TextRenderer?.DrawString($"{queuePageIndex + 1}/{GetQueuePageCount()}", context.SmallFont, context.DimBrush, new PointF(panel.Right - 108, panel.Y + 41));
-            context.TextRenderer?.DrawString("Queue", context.BodyFont, context.WhiteBrush, new PointF(queueList.Bounds.X, panel.Y + 38));
-
-            string selectedBuild = string.IsNullOrWhiteSpace(world.SelectedBuildActorTypeName)
-                ? "No build selected"
-                : "Selected: " + world.GetActorDisplayName(world.GetActorData(world.SelectedBuildActorTypeName));
-            context.TextRenderer?.DrawString(selectedBuild, context.SmallFont, context.AccentBrush, new PointF(panel.X + 14, panel.Bottom - 26));
-
-            ProductionOrder currentProduction = world.GetSelectedProduction();
-            string queueStatus = currentProduction == null
-                ? "Production: idle"
-                : $"Production: {world.GetActorDisplayName(world.GetActorData(currentProduction.ActorTypeName))}";
-            context.TextRenderer?.DrawString(queueStatus, context.SmallFont, context.WhiteBrush, new PointF(panel.X + 14, panel.Bottom - 50));
-            context.TextRenderer?.DrawString($"Queue: {world.SelectedProductionQueueCount}", context.SmallFont, context.DimBrush, new PointF(panel.X + 240, panel.Bottom - 50));
+            context.TextRenderer?.DrawString($"Credits: {world.Credits}", context.BodyFont, context.AccentBrush, new PointF(panel.Right - 140, panel.Y + 8));
+            context.TextRenderer?.DrawString($"Page {buildPageIndex + 1}/{GetBuildPageCount()}", context.SmallFont, context.DimBrush, new PointF(panel.X + 18, panel.Y + 8));
 
             if (!string.IsNullOrWhiteSpace(world.BuildFeedbackMessage))
             {
                 using SolidBrush warningBrush = new SolidBrush(Color.FromArgb((int)(255 * world.BuildFeedbackAlpha), 225, 108, 108));
-                context.TextRenderer?.DrawString(world.BuildFeedbackMessage, context.SmallFont, warningBrush, new PointF(panel.X + 14, panel.Bottom - 72));
+                context.TextRenderer?.DrawString(world.BuildFeedbackMessage, context.SmallFont, warningBrush, new PointF(panel.X + 18, panel.Bottom - 22));
             }
         }
 
-        private ButtonWidget CreatePager(string text, Action clicked)
+        private ButtonWidget CreateTabButton(string tabKey, string text)
         {
             return new ButtonWidget
             {
                 Text = text,
-                BackgroundColor = Color.FromArgb(180, 55, 65, 75),
-                HoverColor = Color.FromArgb(210, 72, 84, 94),
-                Clicked = clicked
+                BackgroundColor = Color.FromArgb(225, 236, 236, 236),
+                HoverColor = Color.FromArgb(255, 255, 255, 255),
+                Brush = Brushes.Black,
+                Clicked = () =>
+                {
+                    selectedTab = tabKey;
+                    buildPageIndex = 0;
+                }
             };
         }
 
         private List<ActorData> GetVisibleBuildActors()
         {
-            return world.GetBuildableActors()
+            return FilterActorsByTab(world.GetBuildableActors())
                 .Skip(buildPageIndex * VisibleBuildItems)
                 .Take(VisibleBuildItems)
                 .ToList();
         }
 
-        private List<ProductionOrder> GetVisibleQueue()
-        {
-            return world.GetSelectedProductionQueue()
-                .Skip(queuePageIndex * VisibleQueueItems)
-                .Take(VisibleQueueItems)
-                .ToList();
-        }
-
         private int GetBuildPageCount()
         {
-            return Math.Max(1, (int)Math.Ceiling(world.GetBuildableActors().Count() / (float)VisibleBuildItems));
-        }
-
-        private int GetQueuePageCount()
-        {
-            return Math.Max(1, (int)Math.Ceiling(world.GetSelectedProductionQueue().Count / (float)VisibleQueueItems));
+            return Math.Max(1, (int)Math.Ceiling(FilterActorsByTab(world.GetBuildableActors()).Count() / (float)VisibleBuildItems));
         }
 
         private void SelectVisibleBuildIndex(int index)
         {
             List<ActorData> visibleActors = GetVisibleBuildActors();
             if (index >= 0 && index < visibleActors.Count)
+            {
                 world.SelectBuildActor(visibleActors[index].TypeName);
+                if (world.CanAffordSelectedBuild())
+                    world.EnqueueBuild(visibleActors[index].TypeName);
+            }
+        }
+
+        private IEnumerable<ActorData> FilterActorsByTab(IEnumerable<ActorData> actors)
+        {
+            return (actors ?? Enumerable.Empty<ActorData>()).Where(actor =>
+            {
+                string category = GetActorCategory(actor);
+                return string.Equals(category, selectedTab, StringComparison.OrdinalIgnoreCase);
+            });
+        }
+
+        private string GetActorCategory(ActorData actor)
+        {
+            if (actor == null)
+                return TabBuilding;
+
+            if (actor.DataField?.Properties != null &&
+                actor.DataField.Properties.TryGetValue("BuildTab", out object buildTabValue))
+            {
+                string buildTab = buildTabValue?.ToString()?.Trim();
+                if (string.Equals(buildTab, TabBuilding, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(buildTab, TabInfantry, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(buildTab, TabVehicle, StringComparison.OrdinalIgnoreCase))
+                {
+                    return buildTab.ToLowerInvariant();
+                }
+            }
+
+            return TabBuilding;
+        }
+
+        private string BuildTooltip(ActorData actor)
+        {
+            if (actor == null)
+                return string.Empty;
+
+            string name = world.GetActorDisplayName(actor);
+            string cost = $"Cost: {world.GetActorCost(actor.TypeName)}";
+            string desc = world.GetActorDescription(actor);
+            return $"{name}\n{cost}\n{desc}";
+        }
+
+        private void UpdateTabVisuals()
+        {
+            ApplyTabStyle(buildingTabButton, selectedTab == TabBuilding);
+            ApplyTabStyle(infantryTabButton, selectedTab == TabInfantry);
+            ApplyTabStyle(vehicleTabButton, selectedTab == TabVehicle);
+        }
+
+        private static void ApplyTabStyle(ButtonWidget button, bool active)
+        {
+            if (button == null)
+                return;
+
+            button.BackgroundColor = active
+                ? Color.FromArgb(255, 255, 255, 255)
+                : Color.FromArgb(225, 236, 236, 236);
+            button.HoverColor = active
+                ? Color.FromArgb(255, 255, 255, 255)
+                : Color.FromArgb(245, 248, 248, 248);
+            button.Brush = Brushes.Black;
         }
     }
 }

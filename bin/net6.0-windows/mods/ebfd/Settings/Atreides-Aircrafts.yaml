@@ -1,0 +1,68 @@
+atreides-mcv:
+	Name: %{str_unit_atreides_mcv_name}Mobile Construction Vehicle
+	Description: %{str_unit_atreides_mcv_desc}The MCV is the massive vehicle that enables bases to be established on Dune.
+	Prerequisites: atreides-factory
+	Cost: 100
+    
+atreides-harvester:
+	Name: %{str_unit_atreides_harvester_name}Atreides Harvester
+	Description: %{str_unit_atreides_harvester_desc}Basic Atreides Infantry unit which can provide the basic firepower
+	Prerequisites: atreides-factory
+	Cost: 100
+    
+atreides-apc:
+	Name: %{str_unit_atreides_apc_name}APC
+	Description: %{str_unit_atreides_apc_desc}Basic Atreides Infantry unit which can provide the basic firepower
+	Prerequisites: atreides-factory
+	Icon: Textures/AT_APC.tga
+	Cost: 100
+    
+atreides-sand-bike:
+	Name: %{str_unit_atreides_sand_bike_name}Sand Bike
+	Description: %{str_unit_atreides_sand_bike_desc}The Sand Bike is the Atreides scout vehicle. 
+	Prerequisites: atreides-factory
+	Icon: Textures/AT_Trike.tga
+	Cost: 100
+    
+atreides-mongoose:
+	Name: %{str_unit_atreides_mongoose_name}Mongoose
+	Description: %{str_unit_atreides_mongoose_desc}This is an Atreides anti-vehicle unit. Comparatively fast and lightly armored, the Mongoose uses a turret-mounted, long-range guided missile launcher to pick off enemy units from a distance and while moving. 
+	Prerequisites: atreides-factory
+	Icon: Textures/AT_Mongoose.tga
+	Cost: 100
+    
+atreides-minotaurus:
+	Name: %{str_unit_atreides_minotaurus_name}Minotaurus
+	Description: %{str_unit_atreides_minotaurus_desc}This Atreides unit carries four large cannons firing high explosive shells out to long range in a massive barrage.
+	Prerequisites: atreides-factory
+	Icon: Textures/AT_Minotaurus.tga
+	Cost: 100
+    
+atreides-repair:
+	Name: %{str_unit_atreides_repair_name}Repair Vehicle
+	Description: %{str_unit_atreides_repair_desc}Many of your units will take damage during the course of battle. 
+	Prerequisites: atreides-factory
+	Icon: Textures/Repair.tga
+	Cost: 100
+    
+atreides-sonic-tank:
+	Name: %{str_unit_atreides_sonic-tank_name}Sonic Tank
+	Description: %{str_unit_atreides_sonic-tank_desc}The Sonic Tank carries a devastating long-range sonic weapon that damages all targets in its area of effect.
+	Prerequisites: atreides-factory
+	Icon: Textures/AT_SonicTank.tga
+	Cost: 100
+    
+atreides-adv-carryall:
+	Name: %{str_unit_atreides_infantry_name}Atreides Infantry
+	Description: %{str_unit_atreides_infantry_desc}Basic Atreides Infantry unit which can provide the basic firepower
+	Prerequisites: atreides-hangar
+	Icon: Textures/AT_ADVCarryall.tga
+	Cost: 100
+
+atreides-drone:
+	Name: %{str_unit_atreides_infantry_name}Atreides Infantry
+	Description: %{str_unit_atreides_infantry_desc}Basic Atreides Infantry unit which can provide the basic firepower
+	Prerequisites: atreides-hangar
+	Icon: Textures/AT_Drone.tga
+	Cost: 100
+    

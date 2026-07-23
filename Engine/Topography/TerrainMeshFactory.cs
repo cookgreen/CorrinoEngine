@@ -2,8 +2,10 @@ using CorrinoEngine.Assets;
 using CorrinoEngine.Graphics.Mesh;
 using CorrinoEngine.Graphics.Shaders;
 using CorrinoEngine.Graphics.Vertices;
+using CorrinoEngine.Maps;
 using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
+using System;
 using System.Linq;
 
 namespace CorrinoEngine.Topography
@@ -30,6 +32,70 @@ namespace CorrinoEngine.Topography
                     Texture = assetManager.Load<Texture>(holder, texturePath).Id
                 },
                 vertices,
+                indices);
+        }
+
+        public static Mesh CreateOriginalTerrainMesh(MapHeightField heightField, MapTerrainMaterialData materialData, Vector2 mapWorldSize, int gridResolution = 128)
+        {
+            int resolution = Math.Max(8, gridResolution);
+            int vertexCount = (resolution + 1) * (resolution + 1);
+            VertexPositionNormalUv[] packedVertices = new VertexPositionNormalUv[vertexCount];
+
+            for (int y = 0; y <= resolution; y++)
+            {
+                for (int x = 0; x <= resolution; x++)
+                {
+                    int i = y * (resolution + 1) + x;
+                    float u = x / (float)resolution;
+                    float v = y / (float)resolution;
+                    float worldX = u * mapWorldSize.X;
+                    float worldZ = v * mapWorldSize.Y;
+                    float worldY = heightField?.SampleHeight01(u, v) ?? 0f;
+
+                    float hL = heightField?.SampleHeight01(Math.Max(0f, u - 1f / resolution), v) ?? worldY;
+                    float hR = heightField?.SampleHeight01(Math.Min(1f, u + 1f / resolution), v) ?? worldY;
+                    float hD = heightField?.SampleHeight01(u, Math.Max(0f, v - 1f / resolution)) ?? worldY;
+                    float hU = heightField?.SampleHeight01(u, Math.Min(1f, v + 1f / resolution)) ?? worldY;
+                    Vector3 normal = Vector3.Normalize(new Vector3(hL - hR, 2f, hD - hU));
+
+                    packedVertices[i] = new VertexPositionNormalUv(
+                        new Vector3(worldX, worldY, worldZ),
+                        normal,
+                        new Vector2(u * 16f, v * 16f));
+                }
+            }
+
+            int[] indices = new int[resolution * resolution * 6];
+            int cursor = 0;
+            for (int y = 0; y < resolution; y++)
+            {
+                for (int x = 0; x < resolution; x++)
+                {
+                    int i0 = y * (resolution + 1) + x;
+                    int i1 = i0 + 1;
+                    int i2 = i0 + resolution + 1;
+                    int i3 = i2 + 1;
+                    indices[cursor++] = i0;
+                    indices[cursor++] = i1;
+                    indices[cursor++] = i3;
+                    indices[cursor++] = i0;
+                    indices[cursor++] = i3;
+                    indices[cursor++] = i2;
+                }
+            }
+
+            return new Mesh(
+                new OriginalTerrainShader.OriginalTerrainShaderParameters(new OriginalTerrainShader())
+                {
+                    BaseTexture = materialData?.BaseTexture ?? 0,
+                    GroundColorTexture = materialData?.GroundColorTexture ?? 0,
+                    GroundLightTexture = materialData?.GroundLightTexture ?? 0,
+                    LightDirection = materialData?.LightDirection ?? new Vector3(-0.25f, 1f, 0.35f),
+                    AmbientTint = materialData?.AmbientTint ?? Vector3.One,
+                    UseGroundColor = materialData?.HasGroundColor == true,
+                    UseGroundLight = materialData?.HasGroundLight == true
+                },
+                packedVertices.SelectMany(o => o.Pack()).ToArray(),
                 indices);
         }
 

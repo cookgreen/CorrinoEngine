@@ -62,7 +62,6 @@ namespace CorrinoEngine.Forms
             lstMaps.Items.Clear();
             var candidates = assetManager.GetAllFiles()
                 .Select(path => path.Replace('\\', '/'))
-                .Where(path => path.Contains("MAPS/", StringComparison.OrdinalIgnoreCase))
                 .Where(path => path.EndsWith("/test.xbf", StringComparison.OrdinalIgnoreCase) || path.EndsWith("/debug.xbf", StringComparison.OrdinalIgnoreCase))
                 .Select(path => path.Substring(0, path.LastIndexOf('/')))
                 .Distinct(StringComparer.OrdinalIgnoreCase)

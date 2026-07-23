@@ -11,6 +11,7 @@ namespace CorrinoEngine.UI.Widgets
 
         public Func<T, string> TitleSelector { get; set; }
         public Func<T, string> SubtitleSelector { get; set; }
+        public Func<T, string> TooltipSelector { get; set; }
         public Func<T, int> IconSelector { get; set; }
         public Func<T, bool> EnabledSelector { get; set; }
         public Func<T, bool> SelectedSelector { get; set; }
@@ -18,9 +19,13 @@ namespace CorrinoEngine.UI.Widgets
         public int Columns { get; set; } = 2;
         public float CardSpacing { get; set; } = 10f;
         public float CardHeight { get; set; } = 72f;
+        public float IconPadding { get; set; } = 8f;
+        public bool DrawLabels { get; set; } = true;
         public Color CardColor { get; set; } = Color.FromArgb(185, 26, 33, 40);
         public Color HoverColor { get; set; } = Color.FromArgb(205, 46, 57, 68);
         public Color SelectedColor { get; set; } = Color.FromArgb(220, 63, 79, 96);
+        public Color IconFrameColor { get; set; } = Color.FromArgb(205, 90, 110, 128);
+        public Color IconHoverFrameColor { get; set; } = Color.FromArgb(240, 220, 186, 109);
 
         public void SetItems(IReadOnlyList<T> items)
         {
@@ -76,16 +81,51 @@ namespace CorrinoEngine.UI.Widgets
 
                 T item = items[i];
                 int iconTexture = IconSelector?.Invoke(item) ?? 0;
+                float iconSize = Math.Min(card.Bounds.Width, card.Bounds.Height) - IconPadding * 2f;
+                iconSize = Math.Max(24f, iconSize);
+                RectangleF iconRect = new RectangleF(
+                    card.Bounds.X + (card.Bounds.Width - iconSize) * 0.5f,
+                    card.Bounds.Y + (card.Bounds.Height - iconSize) * 0.5f,
+                    iconSize,
+                    iconSize);
+                bool hovered = card.IsHovered;
                 if (iconTexture != 0)
                 {
-                    context.DrawTexture?.Invoke(card.Bounds.X + 8, card.Bounds.Y + 8, 40, 40, iconTexture, Color.White, 180f);
+                    context.DrawRect?.Invoke(iconRect.X - 2, iconRect.Y - 2, iconRect.Width + 4, iconRect.Height + 4, hovered ? IconHoverFrameColor : IconFrameColor);
+                    context.DrawRect?.Invoke(iconRect.X, iconRect.Y, iconRect.Width, iconRect.Height, Color.FromArgb(120, 9, 12, 16));
+                    context.DrawTexture?.Invoke(iconRect.X + 4, iconRect.Y + 4, iconRect.Width - 8, iconRect.Height - 8, iconTexture, Color.White, 180f);
                 }
-                string title = TitleSelector?.Invoke(item) ?? item?.ToString() ?? string.Empty;
-                string subtitle = SubtitleSelector?.Invoke(item) ?? string.Empty;
-                float textX = iconTexture != 0 ? card.Bounds.X + 56 : card.Bounds.X + 8;
-                context.TextRenderer?.DrawString(title, context.SmallFont ?? context.BodyFont, context.WhiteBrush, new PointF(textX, card.Bounds.Y + 10));
-                if (!string.IsNullOrWhiteSpace(subtitle))
-                    context.TextRenderer?.DrawString(subtitle, context.SmallFont ?? context.BodyFont, context.AccentBrush, new PointF(textX, card.Bounds.Y + 30));
+                if (DrawLabels)
+                {
+                    string title = TitleSelector?.Invoke(item) ?? item?.ToString() ?? string.Empty;
+                    string subtitle = SubtitleSelector?.Invoke(item) ?? string.Empty;
+                    float textX = iconTexture != 0 ? card.Bounds.X + 68 : card.Bounds.X + 10;
+                    context.DrawText?.Invoke(title, context.BodyFont, context.WhiteBrush, new PointF(textX, card.Bounds.Y + 10));
+                    if (!string.IsNullOrWhiteSpace(subtitle))
+                        context.DrawText?.Invoke(subtitle, context.SmallFont ?? context.BodyFont, context.AccentBrush, new PointF(textX, card.Bounds.Y + 34));
+                }
+
+                if (hovered)
+                {
+                    string tooltip = TooltipSelector?.Invoke(item);
+                    if (!string.IsNullOrWhiteSpace(tooltip))
+                    {
+                        string[] lines = tooltip.Replace("\r", string.Empty).Split('\n');
+                        int maxLineLength = 0;
+                        foreach (string line in lines)
+                            maxLineLength = Math.Max(maxLineLength, line.Length);
+                        float tooltipWidth = Math.Max(160f, maxLineLength * 6.8f + 16f);
+                        float tooltipHeight = Math.Max(26f, lines.Length * 18f + 8f);
+                        float tooltipX = Math.Min(Bounds.Right - tooltipWidth, card.Bounds.X);
+                        float tooltipY = Math.Max(0, card.Bounds.Y - tooltipHeight - 6);
+                        context.DrawRect?.Invoke(tooltipX, tooltipY, tooltipWidth, tooltipHeight, Color.FromArgb(228, 10, 14, 18));
+                        context.DrawRect?.Invoke(tooltipX, tooltipY, tooltipWidth, 2, IconHoverFrameColor);
+                        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+                        {
+                            context.DrawText?.Invoke(lines[lineIndex], context.SmallFont ?? context.BodyFont, context.WhiteBrush, new PointF(tooltipX + 8, tooltipY + 6 + lineIndex * 16));
+                        }
+                    }
+                }
             }
         }
 
