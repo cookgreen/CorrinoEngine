@@ -1,0 +1,11 @@
+atreides-infantry:
+	idle: Units/AT_inf_H0.xbf
+    
+atreides-sniper:
+	idle: Units/AT_inf_H0.xbf
+    
+atreides-deploy-infantry:
+	idle: Units/AT_inf_H0.xbf
+    
+atreides-engineer:
+	idle: Units/AT_inf_H0.xbf

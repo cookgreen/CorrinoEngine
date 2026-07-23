@@ -45,6 +45,18 @@ namespace CorrinoEngine.Orders
                 return;
             }
 
+            if (ms.IsButtonDown(MouseButton.Button1))
+            {
+                if (!world.IsSelectionDragging)
+                {
+                    world.BeginSelectionDrag(new Vector2(ms.X, ms.Y));
+                }
+                else
+                {
+                    world.UpdateSelectionDrag(new Vector2(ms.X, ms.Y));
+                }
+            }
+
             if (ks.IsKeyDown(Keys.X) && world.ConsumeLeftClick())//X + Left Mouse = Place building
             {
                 Order newOrder = new PlaceBuildingOrder(cam, ks, ms);
@@ -52,6 +64,16 @@ namespace CorrinoEngine.Orders
                 newOrder.Execute("atreides-barrack");
                 historyOrders.Push(newOrder);
                 return;
+            }
+
+            if (!ms.IsButtonDown(MouseButton.Button1) && world.IsSelectionDragging)
+            {
+                world.EndSelectionDrag();
+                if (world.HasSelectionRectangle())
+                {
+                    world.SelectActorsInRectangle(world.SelectionRectangle);
+                    return;
+                }
             }
 
             if (world.ConsumeLeftClick())

@@ -137,7 +137,8 @@ namespace CorrinoEngine.Renderer
                 SmallFont = smallFont,
                 DrawRect = DrawRect,
                 DrawTexture = DrawTexture,
-                DrawText = (text, font, brush, point) => textRenderer?.DrawString(text, font, brush, point)
+                DrawText = (text, font, brush, point) => textRenderer?.DrawString(text, font, brush, point),
+                MeasureText = (text, font) => textRenderer?.MeasureString(text ?? string.Empty, font ?? bodyFont) ?? SizeF.Empty
             };
             uiManager?.Render(context);
             DrawTextOverlay();

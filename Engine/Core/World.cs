@@ -18,6 +18,7 @@ using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -35,11 +36,16 @@ namespace CorrinoEngine.Core
         private Actor worldActor;
         private List<FactionInfo> factionInfos;
         private List<Actor> actors;
+        private readonly List<Actor> selectedActors;
         private Actor selectedActor;
         private string selectedBuildActorTypeName;
         private bool suppressNextLeftClick;
         private bool wasLeftMouseDown;
         private bool wasRightMouseDown;
+        private bool isSelectionDragging;
+        private Vector2 selectionStart;
+        private Vector2 selectionEnd;
+        private readonly List<Vector3> movePathPoints;
 
         private Camera camera;
         private CameraController camController;
@@ -47,6 +53,8 @@ namespace CorrinoEngine.Core
         private TerrainRenderer terrainRenderer;
         private Terrain terrain;
         private GameMap currentMap;
+        private string selectedMapYamlPath;
+        private List<string> availableMapPaths;
         private MapHeightField currentHeightField;
         private MapNavigationData currentNavigationData;
         private MapLightingData currentLightingData;
@@ -77,6 +85,29 @@ namespace CorrinoEngine.Core
         public Actor SelectedActor
         {
             get { return selectedActor; }
+        }
+        public IReadOnlyList<Actor> SelectedActors
+        {
+            get { return selectedActors; }
+        }
+        public bool IsSelectionDragging
+        {
+            get { return isSelectionDragging; }
+        }
+        public RectangleF SelectionRectangle
+        {
+            get
+            {
+                float x = Math.Min(selectionStart.X, selectionEnd.X);
+                float y = Math.Min(selectionStart.Y, selectionEnd.Y);
+                float width = Math.Abs(selectionEnd.X - selectionStart.X);
+                float height = Math.Abs(selectionEnd.Y - selectionStart.Y);
+                return new RectangleF(x, y, width, height);
+            }
+        }
+        public IReadOnlyList<Vector3> MovePathPoints
+        {
+            get { return movePathPoints; }
         }
         public int ActorCount
         {
@@ -171,6 +202,8 @@ namespace CorrinoEngine.Core
 
             factionInfos = new List<FactionInfo>();
             actors = new List<Actor>();
+            selectedActors = new List<Actor>();
+            movePathPoints = new List<Vector3>();
 
             worldActor = CreateActor("World");
             parseFaction();
@@ -206,14 +239,45 @@ namespace CorrinoEngine.Core
 
         public void Start()
         {
-            LoadDefaultMap();
+            LoadInitialMap();
             sceneManager.StartNewScene("MainMenu");
         }
 
         public void EnterInnerGame()
         {
+            LoadInitialMap();
             sceneManager.StartNewScene("InnerGame");
             UIManager.Instance.StartUI("WorldHud");
+        }
+
+        public IReadOnlyList<string> GetAvailableMaps()
+        {
+            return availableMapPaths ?? new List<string>();
+        }
+
+        public string GetSelectedMapDisplayName()
+        {
+            if (string.IsNullOrWhiteSpace(selectedMapYamlPath))
+                return "default-map";
+
+            return Path.GetFileNameWithoutExtension(selectedMapYamlPath);
+        }
+
+        public void CycleMapSelection(int direction)
+        {
+            if (availableMapPaths == null || availableMapPaths.Count == 0)
+                return;
+
+            int currentIndex = availableMapPaths.FindIndex(path => string.Equals(path, selectedMapYamlPath, StringComparison.OrdinalIgnoreCase));
+            if (currentIndex < 0)
+                currentIndex = 0;
+
+            currentIndex = (currentIndex + direction) % availableMapPaths.Count;
+            if (currentIndex < 0)
+                currentIndex += availableMapPaths.Count;
+
+            selectedMapYamlPath = availableMapPaths[currentIndex];
+            SetBuildFeedback($"Selected map: {GetSelectedMapDisplayName()}.");
         }
 
         public void Resize(Vector2 viewportSize)
@@ -294,12 +358,13 @@ namespace CorrinoEngine.Core
             worldRenderer.Render(
                 camera,
                 actors,
-                selectedActor,
+                selectedActors,
                 pendingPlacementActor,
                 pendingPlacementPosition,
                 pendingPlacementFootprint,
                 currentMap?.Manifest?.TileSize ?? 48f,
-                IsPendingPlacementValid());
+                IsPendingPlacementValid(),
+                movePathPoints);
         }
 
         public void Update(FrameEventArgs args)
@@ -366,7 +431,7 @@ namespace CorrinoEngine.Core
 			}catch { }
 		}
 
-        private void LoadDefaultMap()
+        private void LoadInitialMap()
         {
             string mapsDir = modData.Manifest.MapsDir;
             if (string.IsNullOrWhiteSpace(mapsDir))
@@ -374,14 +439,43 @@ namespace CorrinoEngine.Core
                 return;
             }
 
-            string mapPath = Path.Combine(modData.FullPath, mapsDir, "default-map.yaml");
-            if (!File.Exists(mapPath))
+            string absoluteMapsDir = Path.Combine(modData.FullPath, mapsDir);
+            if (!Directory.Exists(absoluteMapsDir))
             {
                 return;
             }
 
+            availableMapPaths = Directory.GetFiles(absoluteMapsDir, "*.yaml", SearchOption.TopDirectoryOnly)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            if (availableMapPaths.Count == 0)
+            {
+                return;
+            }
+
+            selectedMapYamlPath = availableMapPaths.FirstOrDefault(path => string.Equals(Path.GetFileName(path), "default-map.yaml", StringComparison.OrdinalIgnoreCase))
+                ?? availableMapPaths[0];
+
+            LoadMapFromPath(selectedMapYamlPath);
+        }
+
+        private void LoadMapFromPath(string mapYamlPath)
+        {
+            if (string.IsNullOrWhiteSpace(mapYamlPath) || !File.Exists(mapYamlPath))
+            {
+                return;
+            }
+
+            terrain = null;
+            worldRenderer = new WorldRenderer();
+            actors.Clear();
+            selectedActors.Clear();
+            selectedActor = null;
+            selectedBuildActorTypeName = null;
+
             currentMap = new GameMap();
-            currentMap.Load(mapPath);
+            currentMap.Load(mapYamlPath);
 
             terrain = BuildTerrain(currentMap);
             terrainRenderer.RenderTerrain(terrain);
@@ -424,6 +518,7 @@ namespace CorrinoEngine.Core
             currentLightingData = null;
             currentMapMin = Vector2.Zero;
             currentMapMax = new Vector2(map.Manifest.Width * tileSize, map.Manifest.Height * tileSize);
+            availableMapPaths = new List<string>();
 
             foreach (var tile in map.Tiles)
             {
@@ -592,13 +687,18 @@ namespace CorrinoEngine.Core
 
             return actors
                 .Where(o => o.MeshInstance != null)
-                .OrderBy(o => Vector2.Distance(
-                    new Vector2(o.Position.X, o.Position.Z),
-                    new Vector2(scenePosition.X, scenePosition.Z)))
-                .FirstOrDefault(o =>
-                    Vector2.Distance(
+                .Select(o => new
+                {
+                    Actor = o,
+                    Distance = Vector2.Distance(
                         new Vector2(o.Position.X, o.Position.Z),
-                        new Vector2(scenePosition.X, scenePosition.Z)) <= o.SelectionRadius);
+                        new Vector2(scenePosition.X, scenePosition.Z))
+                })
+                .Where(o => o.Distance <= o.Actor.SelectionRadius)
+                .OrderBy(o => o.Actor.IsBuilding ? 0 : 1)
+                .ThenBy(o => o.Distance)
+                .Select(o => o.Actor)
+                .FirstOrDefault();
         }
 
         public Vector3 QueryGroundAtCursor()
@@ -610,6 +710,58 @@ namespace CorrinoEngine.Core
             }
 
             return Vector3.Zero;
+        }
+
+        public void BeginSelectionDrag(Vector2 screenPosition)
+        {
+            isSelectionDragging = true;
+            selectionStart = screenPosition;
+            selectionEnd = screenPosition;
+        }
+
+        public void UpdateSelectionDrag(Vector2 screenPosition)
+        {
+            if (!isSelectionDragging)
+                return;
+
+            selectionEnd = screenPosition;
+        }
+
+        public void EndSelectionDrag()
+        {
+            isSelectionDragging = false;
+        }
+
+        public bool HasSelectionRectangle(float minSize = 8f)
+        {
+            RectangleF rect = SelectionRectangle;
+            return rect.Width >= minSize || rect.Height >= minSize;
+        }
+
+        public void SelectActorsInRectangle(RectangleF rect)
+        {
+            List<Actor> hits = actors
+                .Where(actor => actor.MeshInstance != null)
+                .Where(actor =>
+                {
+                    Vector2 screen = camera.ToViewport(actor.Position);
+                    return rect.Contains(screen.X, screen.Y);
+                })
+                .OrderBy(actor => actor.IsBuilding ? 1 : 0)
+                .ThenBy(actor => actor.Position.X)
+                .ToList();
+
+            if (hits.Count == 0)
+            {
+                ClearSelection();
+                return;
+            }
+
+            ApplySelection(hits);
+            if (hits.Count == 1)
+                SetBuildFeedback($"Selected {GetActorDisplayName(hits[0].ActorData)}.");
+            else
+                SetBuildFeedback($"Selected {hits.Count} actors.");
         }
 
         public bool ConsumeLeftClick()
@@ -679,31 +831,19 @@ namespace CorrinoEngine.Core
 
         public void SelectActor(Actor actor)
         {
-            if (selectedActor != null)
+            if (actor == null)
             {
-                selectedActor.OnDeselect();
-            }
-
-            selectedActor = actor;
-            selectedBuildActorTypeName = null;
-
-            if (selectedActor != null)
-            {
-                selectedActor.OnSelect();
-                SetBuildFeedback($"Selected {GetSelectedActorDisplayName()}.");
-            }
-            else
-            {
+                ClearSelection();
                 SetBuildFeedback("Selection cleared.");
+                return;
             }
+
+            ApplySelection(new[] { actor });
+            SetBuildFeedback($"Selected {GetSelectedActorDisplayName()}.");
 
             if (CanActorProduce(selectedActor))
             {
                 UIManager.Instance.StartUI("WorldHud");
-            }
-            else
-            {
-                UIManager.Instance.CloseBuildQueueUI();
             }
         }
 
@@ -861,17 +1001,21 @@ namespace CorrinoEngine.Core
 
         public void MoveSelectedActor(Vector3 target)
         {
-            if (selectedActor == null)
+            if (selectedActors.Count == 0)
             {
                 return;
             }
 
-            if (!CanActorMove(selectedActor))
+            movePathPoints.Clear();
+            foreach (Actor actor in selectedActors)
             {
-                return;
+                if (!CanActorMove(actor))
+                    continue;
+
+                actor.MoveTo(target);
             }
 
-            selectedActor.MoveTo(target);
+            movePathPoints.Add(target);
         }
 
         public bool IsPendingPlacementValid()
@@ -1086,7 +1230,31 @@ namespace CorrinoEngine.Core
 
         public bool CanActorMove(Actor actor)
         {
-            return actor != null && actor.CanMove && !CanActorProduce(actor);
+            return actor != null && actor.CanMove;
+        }
+
+        private void ApplySelection(IEnumerable<Actor> actorsToSelect)
+        {
+            foreach (Actor actor in selectedActors)
+            {
+                actor?.OnDeselect();
+            }
+
+            selectedActors.Clear();
+            selectedBuildActorTypeName = null;
+
+            foreach (Actor actor in (actorsToSelect ?? Enumerable.Empty<Actor>()).Where(actor => actor != null).Distinct())
+            {
+                actor.OnSelect();
+                selectedActors.Add(actor);
+            }
+
+            selectedActor = selectedActors.FirstOrDefault();
+        }
+
+        public void ClearSelection()
+        {
+            ApplySelection(Array.Empty<Actor>());
         }
 
         private void SetBuildFeedback(string message)
@@ -1106,6 +1274,11 @@ namespace CorrinoEngine.Core
             if (buildFeedbackTimeLeft <= 0)
             {
                 buildFeedbackMessage = string.Empty;
+            }
+
+            if (movePathPoints.Count > 0 && buildFeedbackTimeLeft <= 1.25f)
+            {
+                movePathPoints.Clear();
             }
         }
 

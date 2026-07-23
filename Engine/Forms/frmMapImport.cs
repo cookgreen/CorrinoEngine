@@ -16,10 +16,12 @@ namespace CorrinoEngine.Forms
         private readonly TextBox txtOutputName;
         private readonly Button btnConvert;
         private readonly ListBox lstMaps;
+        private readonly string modMapsDir;
 
         public frmMapImport(AssetManager assetManager)
         {
             this.assetManager = assetManager;
+            modMapsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mods", "ebfd", "Maps");
             Text = "Import Original Map";
             Width = 720;
             Height = 520;
@@ -85,7 +87,7 @@ namespace CorrinoEngine.Forms
             txtMapPath.Text = mapPath;
             if (string.IsNullOrWhiteSpace(txtOutputName.Text))
             {
-                string safeName = mapPath.Split('/').Last().Replace(' ', '-').Replace('#', '_');
+                string safeName = mapPath.Split('/').Last().Replace(' ', '-').Replace('#', '_').ToLowerInvariant();
                 txtOutputName.Text = safeName + ".yaml";
             }
         }
@@ -98,9 +100,14 @@ namespace CorrinoEngine.Forms
                 return;
             }
 
-            string mapsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mods", "ebfd", "Maps");
-            Directory.CreateDirectory(mapsDir);
-            string outputPath = Path.Combine(mapsDir, txtOutputName.Text);
+            Directory.CreateDirectory(modMapsDir);
+            string outputFileName = txtOutputName.Text.Trim();
+            if (!outputFileName.EndsWith(".yaml", StringComparison.OrdinalIgnoreCase))
+            {
+                outputFileName += ".yaml";
+            }
+
+            string outputPath = Path.Combine(modMapsDir, outputFileName);
 
             string mapDir = txtMapPath.Text.Replace('\\', '/');
             string mapName = mapDir.Split('/').Last();

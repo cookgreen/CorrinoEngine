@@ -18,5 +18,6 @@ namespace CorrinoEngine.UI
         public System.Action<float, float, float, float, Color> DrawRect { get; set; }
         public System.Action<float, float, float, float, int, Color, float> DrawTexture { get; set; }
         public System.Action<string, Font, Brush, PointF> DrawText { get; set; }
+        public System.Func<string, Font, SizeF> MeasureText { get; set; }
     }
 }

@@ -10,7 +10,7 @@ namespace CorrinoEngine.UI
 {
     public class WorldHudScreen : UIScreen
     {
-        private const float BuildPanelWidth = 520f;
+        private const float BuildPanelWidth = 330f;
         private const float BuildPanelHeight = 340f;
         private const int VisibleBuildColumns = 3;
         private const int VisibleBuildRows = 3;
@@ -49,9 +49,9 @@ namespace CorrinoEngine.UI
             buildGrid = new CardGridWidget<ActorData>
             {
                 Columns = VisibleBuildColumns,
-                CardHeight = 74f,
+                CardHeight = 84f,
                 DrawLabels = false,
-                IconPadding = 10f,
+                IconPadding = 4f,
                 IconSelector = actor => actor == null ? 0 : world.GetActorIconTexture(actor.TypeName),
                 TitleSelector = actor => string.Empty,
                 SubtitleSelector = actor => string.Empty,
@@ -98,7 +98,7 @@ namespace CorrinoEngine.UI
         {
             IsVisible = true;
             isBuildPanelVisible = world.SelectedActor != null && world.CanActorProduce(world.SelectedActor);
-            BlocksWorldInput = isBuildPanelVisible && buildPanel.HitTest(input.MousePosition);
+            BlocksWorldInput = buildPanel.HitTest(input.MousePosition);
 
             if (isBuildPanelVisible && Math.Abs(input.ScrollDelta) > float.Epsilon && buildPanel.HitTest(input.MousePosition))
             {
@@ -144,25 +144,36 @@ namespace CorrinoEngine.UI
             context.TextRenderer?.DrawString(selectedTitle, context.TitleFont, context.WhiteBrush, new PointF(24, bottomY));
             context.TextRenderer?.DrawString(selectedDesc, context.BodyFont, context.DimBrush, new PointF(24, bottomY + 32));
             context.TextRenderer?.DrawString(buildHint, context.BodyFont, context.AccentBrush, new PointF(24, bottomY + 64));
+            context.TextRenderer?.DrawString($"Map: {world.GetSelectedMapDisplayName()}", context.BodyFont, context.DimBrush, new PointF(24, bottomY + 88));
 
             context.TextRenderer?.DrawString("Camera", context.TitleFont, context.WhiteBrush, new PointF(context.ViewportSize.X - 284, 20));
             context.TextRenderer?.DrawString($"Actors: {world.ActorCount}", context.BodyFont, context.WhiteBrush, new PointF(context.ViewportSize.X - 284, 54));
             context.TextRenderer?.DrawString($"Buildable: {world.GetBuildableActors().Count()}", context.BodyFont, context.DimBrush, new PointF(context.ViewportSize.X - 284, 76));
 
-            if (!isBuildPanelVisible)
-                return;
-
             buildPanel.Render(context);
 
             RectangleF panel = buildPanel.Bounds;
             context.DrawRect?.Invoke(panel.X, panel.Y, panel.Width, 4, Color.FromArgb(220, 196, 160, 92));
-            context.TextRenderer?.DrawString($"Credits: {world.Credits}", context.BodyFont, context.AccentBrush, new PointF(panel.Right - 140, panel.Y + 8));
-            context.TextRenderer?.DrawString($"Page {buildPageIndex + 1}/{GetBuildPageCount()}", context.SmallFont, context.DimBrush, new PointF(panel.X + 18, panel.Y + 8));
+            context.TextRenderer?.DrawString($"Credits: {world.Credits}", context.BodyFont, context.AccentBrush, new PointF(panel.Right - 126, panel.Y + 8));
+            if (isBuildPanelVisible)
+                context.TextRenderer?.DrawString($"Page {buildPageIndex + 1}/{GetBuildPageCount()}", context.SmallFont, context.DimBrush, new PointF(panel.X + 18, panel.Y + 8));
+            else
+                context.TextRenderer?.DrawString("Select a production building", context.SmallFont, context.DimBrush, new PointF(panel.X + 18, panel.Y + 8));
 
             if (!string.IsNullOrWhiteSpace(world.BuildFeedbackMessage))
             {
                 using SolidBrush warningBrush = new SolidBrush(Color.FromArgb((int)(255 * world.BuildFeedbackAlpha), 225, 108, 108));
                 context.TextRenderer?.DrawString(world.BuildFeedbackMessage, context.SmallFont, warningBrush, new PointF(panel.X + 18, panel.Bottom - 22));
+            }
+
+            if (world.IsSelectionDragging && world.HasSelectionRectangle())
+            {
+                RectangleF selectionRect = world.SelectionRectangle;
+                context.DrawRect?.Invoke(selectionRect.X, selectionRect.Y, selectionRect.Width, selectionRect.Height, Color.FromArgb(70, 50, 180, 90));
+                context.DrawRect?.Invoke(selectionRect.X, selectionRect.Y, selectionRect.Width, 2, Color.FromArgb(220, 90, 255, 120));
+                context.DrawRect?.Invoke(selectionRect.X, selectionRect.Bottom - 2, selectionRect.Width, 2, Color.FromArgb(220, 90, 255, 120));
+                context.DrawRect?.Invoke(selectionRect.X, selectionRect.Y, 2, selectionRect.Height, Color.FromArgb(220, 90, 255, 120));
+                context.DrawRect?.Invoke(selectionRect.Right - 2, selectionRect.Y, 2, selectionRect.Height, Color.FromArgb(220, 90, 255, 120));
             }
         }
 

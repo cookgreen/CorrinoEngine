@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 
 namespace CorrinoEngine.UI.Widgets
 {
@@ -51,6 +52,9 @@ namespace CorrinoEngine.UI.Widgets
 
         public override bool HandleInput(UiInputState input)
         {
+            inputMouseX = input.MousePosition.X;
+            inputMouseY = input.MousePosition.Y;
+
             if (!Visible || !Enabled)
                 return false;
 
@@ -110,24 +114,29 @@ namespace CorrinoEngine.UI.Widgets
                     string tooltip = TooltipSelector?.Invoke(item);
                     if (!string.IsNullOrWhiteSpace(tooltip))
                     {
-                        string[] lines = tooltip.Replace("\r", string.Empty).Split('\n');
-                        int maxLineLength = 0;
-                        foreach (string line in lines)
-                            maxLineLength = Math.Max(maxLineLength, line.Length);
-                        float tooltipWidth = Math.Max(160f, maxLineLength * 6.8f + 16f);
-                        float tooltipHeight = Math.Max(26f, lines.Length * 18f + 8f);
-                        float tooltipX = Math.Min(Bounds.Right - tooltipWidth, card.Bounds.X);
-                        float tooltipY = Math.Max(0, card.Bounds.Y - tooltipHeight - 6);
+                        Font tooltipFont = context.SmallFont ?? context.BodyFont;
+                        List<string> wrappedLines = WrapTooltipLines(tooltip, tooltipFont, context, 260f);
+                        float maxWidth = wrappedLines
+                            .Select(line => context.MeasureText?.Invoke(line, tooltipFont).Width ?? 0f)
+                            .DefaultIfEmpty(120f)
+                            .Max();
+                        float tooltipWidth = Math.Max(160f, maxWidth + 16f);
+                        float tooltipHeight = Math.Max(26f, wrappedLines.Count * 18f + 8f);
+                        float tooltipX = Math.Min(context.ViewportSize.X - tooltipWidth - 8f, inputMouseX + 20f);
+                        float tooltipY = Math.Min(context.ViewportSize.Y - tooltipHeight - 8f, inputMouseY + 20f);
                         context.DrawRect?.Invoke(tooltipX, tooltipY, tooltipWidth, tooltipHeight, Color.FromArgb(228, 10, 14, 18));
                         context.DrawRect?.Invoke(tooltipX, tooltipY, tooltipWidth, 2, IconHoverFrameColor);
-                        for (int lineIndex = 0; lineIndex < lines.Length; lineIndex++)
+                        for (int lineIndex = 0; lineIndex < wrappedLines.Count; lineIndex++)
                         {
-                            context.DrawText?.Invoke(lines[lineIndex], context.SmallFont ?? context.BodyFont, context.WhiteBrush, new PointF(tooltipX + 8, tooltipY + 6 + lineIndex * 16));
+                            context.DrawText?.Invoke(wrappedLines[lineIndex], tooltipFont, context.WhiteBrush, new PointF(tooltipX + 8, tooltipY + 6 + lineIndex * 16));
                         }
                     }
                 }
             }
         }
+
+        private float inputMouseX;
+        private float inputMouseY;
 
         private void EnsureRealizedItems()
         {
@@ -157,6 +166,40 @@ namespace CorrinoEngine.UI.Widgets
                 card.BackgroundColor = SelectedSelector?.Invoke(item) == true ? SelectedColor : CardColor;
                 card.HoverColor = HoverColor;
             }
+        }
+
+        private static List<string> WrapTooltipLines(string tooltip, Font font, UiRenderContext context, float maxWidth)
+        {
+            var lines = new List<string>();
+            foreach (string baseLine in tooltip.Replace("\r", string.Empty).Split('\n'))
+            {
+                string[] words = baseLine.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (words.Length == 0)
+                {
+                    lines.Add(string.Empty);
+                    continue;
+                }
+
+                string current = words[0];
+                for (int i = 1; i < words.Length; i++)
+                {
+                    string candidate = current + " " + words[i];
+                    float candidateWidth = context.MeasureText?.Invoke(candidate, font).Width ?? 0f;
+                    if (candidateWidth > maxWidth)
+                    {
+                        lines.Add(current);
+                        current = words[i];
+                    }
+                    else
+                    {
+                        current = candidate;
+                    }
+                }
+
+                lines.Add(current);
+            }
+
+            return lines;
         }
     }
 }

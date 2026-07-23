@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Text;
@@ -71,6 +71,11 @@ namespace CorrinoEngine.Renderer
             SizeF size = gfx.MeasureString(text, font);
             dirty_region = Rectangle.Round(RectangleF.Union(dirty_region, new RectangleF(point, size)));
             dirty_region = Rectangle.Intersect(dirty_region, new Rectangle(0, 0, bmp.Width, bmp.Height));
+        }
+
+        public SizeF MeasureString(string text, Font font)
+        {
+            return gfx.MeasureString(text ?? string.Empty, font);
         }
 
         /// <summary>

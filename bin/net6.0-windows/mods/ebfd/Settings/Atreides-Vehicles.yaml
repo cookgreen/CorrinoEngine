@@ -52,17 +52,3 @@ atreides-sonic-tank:
 	Icon: Textures/AT_SonicTank.tga
 	Cost: 100
     
-atreides-adv-carryall:
-	Name: %{str_unit_atreides_infantry_name}Atreides Infantry
-	Description: %{str_unit_atreides_infantry_desc}Basic Atreides Infantry unit which can provide the basic firepower
-	Prerequisites: atreides-hangar
-	Icon: Textures/AT_ADVCarryall.tga
-	Cost: 100
-
-atreides-drone:
-	Name: %{str_unit_atreides_infantry_name}Atreides Infantry
-	Description: %{str_unit_atreides_infantry_desc}Basic Atreides Infantry unit which can provide the basic firepower
-	Prerequisites: atreides-hangar
-	Icon: Textures/AT_Drone.tga
-	Cost: 100
-    
