@@ -15,6 +15,11 @@ namespace CorrinoEngine
             get { return argDic.Count; }
         }
 
+        public string this[string key] 
+        {
+            get { return GetArgumentParameter(key); }
+        }
+
         public Argument(string[] args)
         {
             argDic = new Dictionary<string, string>();

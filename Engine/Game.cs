@@ -32,6 +32,7 @@ namespace CorrinoEngine
         private World world;
         private AssetManager assetManager;
         private HudRenderer hudRenderer;
+        private Vector2 viewportSize;
 
         public GameState State
         {
@@ -51,6 +52,7 @@ namespace CorrinoEngine
             }
 
             gameState = GameState.running;
+            viewportSize = size;
 
             GL.ClearColor(0, 0, 0, 1);
             GL.Enable(EnableCap.DepthTest);
@@ -127,6 +129,7 @@ namespace CorrinoEngine
 
         public void Resize(Vector2 size)
         {
+            viewportSize = size;
             world?.Resize(size);
 
             if (hudRenderer != null)

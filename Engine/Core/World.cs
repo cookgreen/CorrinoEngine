@@ -311,6 +311,12 @@ namespace CorrinoEngine.Core
                         LoadXbf(modelSelector.SelectedModel);
                     }
                 }
+
+                if (ks.IsKeyDown(Keys.A) && ks.IsKeyDown(Keys.LeftShift))
+                {
+                    using frmAssetBrowser assetBrowser = new frmAssetBrowser(assetManager);
+                    assetBrowser.ShowDialog();
+                }
             }
         }
 

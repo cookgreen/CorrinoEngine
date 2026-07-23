@@ -1,11 +1,11 @@
 using System;
+using System.Drawing;
+using System.Linq;
 using CorrinoEngine.Core;
 using CorrinoEngine.Fields;
 using CorrinoEngine.UI;
-using OpenTK.Graphics.OpenGL;
+using OpenTK.Graphics.OpenGL4;
 using OpenTK.Mathematics;
-using System.Drawing;
-using System.Linq;
 
 namespace CorrinoEngine.Renderer
 {
@@ -45,6 +45,52 @@ namespace CorrinoEngine.Renderer
         private bool isHoveringBuildNextButton;
         private bool isHoveringQueuePrevButton;
         private bool isHoveringQueueNextButton;
+        private readonly int shaderProgram;
+        private readonly int vertexArrayObject;
+        private readonly int vertexBufferObject;
+        private readonly int indexBufferObject;
+        private readonly int viewportUniform;
+        private readonly int colorUniform;
+        private readonly int useTextureUniform;
+        private readonly int textureUniform;
+
+        private const string VertexShaderSource = @"
+            #version 330 core
+
+            layout(location = 0) in vec2 aPosition;
+            layout(location = 1) in vec2 aUv;
+
+            uniform vec2 uViewport;
+
+            out vec2 vUv;
+
+            void main()
+            {
+                vec2 ndc = vec2(
+                    (aPosition.x / uViewport.x) * 2.0 - 1.0,
+                    1.0 - (aPosition.y / uViewport.y) * 2.0);
+                gl_Position = vec4(ndc, 0.0, 1.0);
+                vUv = aUv;
+            }
+        ";
+
+        private const string FragmentShaderSource = @"
+            #version 330 core
+
+            in vec2 vUv;
+
+            uniform vec4 uColor;
+            uniform bool uUseTexture;
+            uniform sampler2D uTexture;
+
+            out vec4 fColor;
+
+            void main()
+            {
+                vec4 baseColor = uUseTexture ? texture(uTexture, vUv) : vec4(1.0);
+                fColor = baseColor * uColor;
+            }
+        ";
 
         public HudRenderer(Vector2 viewportSize)
         {
@@ -62,6 +108,29 @@ namespace CorrinoEngine.Renderer
             lastScrollValue = 0;
             hoveredBuildIndex = -1;
             hoveredQueueIndex = -1;
+
+            shaderProgram = CreateShaderProgram(VertexShaderSource, FragmentShaderSource);
+            viewportUniform = GL.GetUniformLocation(shaderProgram, "uViewport");
+            colorUniform = GL.GetUniformLocation(shaderProgram, "uColor");
+            useTextureUniform = GL.GetUniformLocation(shaderProgram, "uUseTexture");
+            textureUniform = GL.GetUniformLocation(shaderProgram, "uTexture");
+
+            vertexArrayObject = GL.GenVertexArray();
+            vertexBufferObject = GL.GenBuffer();
+            indexBufferObject = GL.GenBuffer();
+
+            GL.BindVertexArray(vertexArrayObject);
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferObject);
+            GL.BufferData(BufferTarget.ArrayBuffer, 16 * sizeof(float), IntPtr.Zero, BufferUsageHint.DynamicDraw);
+            GL.BindBuffer(BufferTarget.ElementArrayBuffer, indexBufferObject);
+            GL.BufferData(BufferTarget.ElementArrayBuffer, 6 * sizeof(uint), new uint[] { 0, 1, 2, 0, 2, 3 }, BufferUsageHint.StaticDraw);
+
+            GL.EnableVertexAttribArray(0);
+            GL.VertexAttribPointer(0, 2, VertexAttribPointerType.Float, false, 4 * sizeof(float), 0);
+            GL.EnableVertexAttribArray(1);
+            GL.VertexAttribPointer(1, 2, VertexAttribPointerType.Float, false, 4 * sizeof(float), 2 * sizeof(float));
+
+            GL.BindVertexArray(0);
         }
 
         public void Resize(Vector2 size)
@@ -73,31 +142,24 @@ namespace CorrinoEngine.Renderer
 
         public void Render(World world)
         {
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.PushMatrix();
-            GL.LoadIdentity();
-            GL.Ortho(0, viewportSize.X, viewportSize.Y, 0, -1, 1);
-
-            GL.MatrixMode(MatrixMode.Modelview);
-            GL.PushMatrix();
-            GL.LoadIdentity();
-
+            GL.Viewport(0, 0, (int)viewportSize.X, (int)viewportSize.Y);
             GL.Disable(EnableCap.DepthTest);
+            GL.Disable(EnableCap.CullFace);
             GL.Enable(EnableCap.Blend);
             GL.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            GL.DepthMask(false);
+            GL.UseProgram(shaderProgram);
+            GL.Uniform2(viewportUniform, viewportSize);
+            GL.BindVertexArray(vertexArrayObject);
 
             DrawPanels(world);
             DrawHudText(world);
-
-            GL.Enable(EnableCap.Texture2D);
             DrawTextOverlay();
-            GL.Disable(EnableCap.Texture2D);
-            GL.Enable(EnableCap.DepthTest);
 
-            GL.PopMatrix();
-            GL.MatrixMode(MatrixMode.Projection);
-            GL.PopMatrix();
-            GL.MatrixMode(MatrixMode.Modelview);
+            GL.BindVertexArray(0);
+            GL.UseProgram(0);
+            GL.DepthMask(true);
+            GL.Enable(EnableCap.DepthTest);
         }
 
         private void DrawPanels(World world)
@@ -292,26 +354,12 @@ namespace CorrinoEngine.Renderer
         private void DrawTextOverlay()
         {
             int texture = textRenderer.Texture;
-            GL.BindTexture(TextureTarget.Texture2D, texture);
-            GL.Color4(Color.White);
-
-            GL.Begin(PrimitiveType.Quads);
-            GL.TexCoord2(0, 0); GL.Vertex2(0, 0);
-            GL.TexCoord2(1, 0); GL.Vertex2(viewportSize.X, 0);
-            GL.TexCoord2(1, 1); GL.Vertex2(viewportSize.X, viewportSize.Y);
-            GL.TexCoord2(0, 1); GL.Vertex2(0, viewportSize.Y);
-            GL.End();
+            DrawQuad(0, 0, viewportSize.X, viewportSize.Y, Color.White, texture, true);
         }
 
-        private static void DrawRect(float x, float y, float width, float height, Color color)
+        private void DrawRect(float x, float y, float width, float height, Color color)
         {
-            GL.Color4(color);
-            GL.Begin(PrimitiveType.Quads);
-            GL.Vertex2(x, y);
-            GL.Vertex2(x + width, y);
-            GL.Vertex2(x + width, y + height);
-            GL.Vertex2(x, y + height);
-            GL.End();
+            DrawQuad(x, y, width, height, color, 0, false);
         }
 
         private void DrawBuildPanel(World world)
@@ -744,8 +792,93 @@ namespace CorrinoEngine.Renderer
             (accentBrush as IDisposable)?.Dispose();
             (dimBrush as IDisposable)?.Dispose();
             (warningBrush as IDisposable)?.Dispose();
+            GL.DeleteBuffer(indexBufferObject);
+            GL.DeleteBuffer(vertexBufferObject);
+            GL.DeleteVertexArray(vertexArrayObject);
+            GL.DeleteProgram(shaderProgram);
             disposed = true;
             GC.SuppressFinalize(this);
+        }
+
+        private void DrawQuad(float x, float y, float width, float height, Color color, int texture, bool useTexture)
+        {
+            if (width <= 0 || height <= 0)
+            {
+                return;
+            }
+
+            float[] vertices =
+            {
+                x, y, 0f, 0f,
+                x + width, y, 1f, 0f,
+                x + width, y + height, 1f, 1f,
+                x, y + height, 0f, 1f
+            };
+
+            GL.BindBuffer(BufferTarget.ArrayBuffer, vertexBufferObject);
+            GL.BufferSubData(BufferTarget.ArrayBuffer, IntPtr.Zero, vertices.Length * sizeof(float), vertices);
+
+            GL.Uniform4(
+                colorUniform,
+                color.R / 255f,
+                color.G / 255f,
+                color.B / 255f,
+                color.A / 255f);
+            GL.Uniform1(useTextureUniform, useTexture ? 1 : 0);
+
+            if (useTexture)
+            {
+                GL.ActiveTexture(TextureUnit.Texture0);
+                GL.BindTexture(TextureTarget.Texture2D, texture);
+                GL.Uniform1(textureUniform, 0);
+            }
+            else
+            {
+                GL.BindTexture(TextureTarget.Texture2D, 0);
+            }
+
+            GL.DrawElements(PrimitiveType.Triangles, 6, DrawElementsType.UnsignedInt, 0);
+        }
+
+        private static int CreateShaderProgram(string vertexShaderSource, string fragmentShaderSource)
+        {
+            int vertexShader = CompileShader(ShaderType.VertexShader, vertexShaderSource);
+            int fragmentShader = CompileShader(ShaderType.FragmentShader, fragmentShaderSource);
+            int program = GL.CreateProgram();
+            GL.AttachShader(program, vertexShader);
+            GL.AttachShader(program, fragmentShader);
+            GL.LinkProgram(program);
+            GL.GetProgram(program, GetProgramParameterName.LinkStatus, out int linkStatus);
+            if (linkStatus == 0)
+            {
+                string error = GL.GetProgramInfoLog(program);
+                GL.DeleteProgram(program);
+                GL.DeleteShader(vertexShader);
+                GL.DeleteShader(fragmentShader);
+                throw new InvalidOperationException(error);
+            }
+
+            GL.DetachShader(program, vertexShader);
+            GL.DetachShader(program, fragmentShader);
+            GL.DeleteShader(vertexShader);
+            GL.DeleteShader(fragmentShader);
+            return program;
+        }
+
+        private static int CompileShader(ShaderType shaderType, string shaderSource)
+        {
+            int shader = GL.CreateShader(shaderType);
+            GL.ShaderSource(shader, shaderSource);
+            GL.CompileShader(shader);
+            GL.GetShader(shader, ShaderParameter.CompileStatus, out int compileStatus);
+            if (compileStatus == 0)
+            {
+                string error = GL.GetShaderInfoLog(shader);
+                GL.DeleteShader(shader);
+                throw new InvalidOperationException(error);
+            }
+
+            return shader;
         }
     }
 }

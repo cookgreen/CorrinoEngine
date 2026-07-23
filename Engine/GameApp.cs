@@ -31,6 +31,7 @@ namespace CorrinoEngine
 		public GameApp(Argument argument)
 			: base(GameWindowSettings.Default, NativeWindowSettings.Default)
 		{
+			Title = "Corrino Engine - Mod: [" + ModManager.Instance.Mods[argument["Mod"]].Manifest.MetaData.Name +"]";
 			game = new Game(argument);
 			WindowState = WindowState.Maximized;
 		}
@@ -39,8 +40,6 @@ namespace CorrinoEngine
 		{
 			base.OnLoad();
 			GL.Viewport(0, 0, Size.X, Size.Y);
-			game.StartNewGame(Size, MouseState, KeyboardState);
-			game.Resize(Size);
 		}
 
         protected override void OnResize(ResizeEventArgs args)
@@ -53,7 +52,6 @@ namespace CorrinoEngine
 
 		protected override void OnRenderFrame(FrameEventArgs args)
 		{
-			base.OnRenderFrame(args);
 			GL.Viewport(0, 0, Size.X, Size.Y);
 			GL.Clear(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit);
 			game.RenderFrame();
