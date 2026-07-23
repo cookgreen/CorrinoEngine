@@ -22,6 +22,11 @@ namespace CorrinoEngine.Core
         private bool isSelected;
         private float moveSpeed;
         private float selectionRadius;
+        private Func<float, float, float> groundHeightProvider;
+        private bool isUnderConstruction;
+        private float constructionProgress;
+        private float constructionDuration;
+        private bool constructionCompletedThisFrame;
 
         public ActorData ActorData
         {
@@ -51,18 +56,49 @@ namespace CorrinoEngine.Core
         {
             get { return isSelected; }
         }
+        public bool IsUnderConstruction
+        {
+            get { return isUnderConstruction; }
+        }
+        public bool IsOperational
+        {
+            get { return !isUnderConstruction; }
+        }
+        public float ConstructionProgress01
+        {
+            get
+            {
+                if (!isUnderConstruction || constructionDuration <= 0f)
+                {
+                    return 1f;
+                }
+
+                return Math.Clamp(constructionProgress / constructionDuration, 0f, 1f);
+            }
+        }
         public bool IsBuilding
         {
             get
             {
-                return HasField("ProvideBuildings") || !CanMove;
+                string category = GetFieldValue("Category")?.ToString();
+                if (string.IsNullOrWhiteSpace(category))
+                {
+                    category = GetFieldValue("ActorCategory")?.ToString();
+                }
+
+                if (!string.IsNullOrWhiteSpace(category))
+                {
+                    return string.Equals(category, "building", StringComparison.OrdinalIgnoreCase);
+                }
+
+                return HasField("ProvideBuildings");
             }
         }
         public bool CanMove
         {
             get
             {
-                return !HasField("ProvideBuildings");
+                return !IsBuilding;
             }
         }
         public IReadOnlyCollection<ProductionOrder> ProductionQueue
@@ -78,7 +114,7 @@ namespace CorrinoEngine.Core
             moveSpeed = 72;
             selectionRadius = 36;
             parseFields();
-            if (HasField("ProvideBuildings"))
+            if (IsBuilding)
             {
                 selectionRadius = 72;
             }
@@ -149,6 +185,31 @@ namespace CorrinoEngine.Core
             moveTarget = target;
         }
 
+        public void SetGroundHeightProvider(Func<float, float, float> provider)
+        {
+            groundHeightProvider = provider;
+            if (meshInstance != null)
+            {
+                meshInstance.Position = SnapToGround(meshInstance.Position);
+                moveTarget = SnapToGround(moveTarget);
+            }
+        }
+
+        public void StartConstruction(float duration)
+        {
+            isUnderConstruction = true;
+            constructionProgress = 0f;
+            constructionDuration = Math.Max(0.25f, duration);
+            constructionCompletedThisFrame = false;
+        }
+
+        public bool ConsumeConstructionCompleted()
+        {
+            bool completed = constructionCompletedThisFrame;
+            constructionCompletedThisFrame = false;
+            return completed;
+        }
+
         public void EnqueueProduction(ProductionOrder order)
         {
             productionQueue.Enqueue(order);
@@ -214,22 +275,51 @@ namespace CorrinoEngine.Core
 
         public void Update(FrameEventArgs args)
         {
+            constructionCompletedThisFrame = false;
             if (meshInstance != null)
             {
-                Vector3 delta = moveTarget - meshInstance.Position;
-                if (delta.LengthSquared > 1f)
+                Vector2 currentXZ = new Vector2(meshInstance.Position.X, meshInstance.Position.Z);
+                Vector2 targetXZ = new Vector2(moveTarget.X, moveTarget.Z);
+                Vector2 deltaXZ = targetXZ - currentXZ;
+                if (deltaXZ.LengthSquared > 1f)
                 {
-                    Vector3 step = delta.Normalized() * moveSpeed * (float)args.Time;
-                    if (step.LengthSquared >= delta.LengthSquared)
+                    Vector2 stepXZ = deltaXZ.Normalized() * moveSpeed * (float)args.Time;
+                    if (stepXZ.LengthSquared >= deltaXZ.LengthSquared)
                     {
-                        meshInstance.Position = moveTarget;
+                        meshInstance.Position = SnapToGround(moveTarget);
                     }
                     else
                     {
-                        meshInstance.Position += step;
+                        Vector2 nextXZ = currentXZ + stepXZ;
+                        meshInstance.Position = SnapToGround(new Vector3(nextXZ.X, meshInstance.Position.Y, nextXZ.Y));
                     }
                 }
+                else
+                {
+                    meshInstance.Position = SnapToGround(meshInstance.Position);
+                }
             }
+
+            if (isUnderConstruction)
+            {
+                constructionProgress += (float)args.Time;
+                if (constructionProgress >= constructionDuration)
+                {
+                    constructionProgress = constructionDuration;
+                    isUnderConstruction = false;
+                    constructionCompletedThisFrame = true;
+                }
+            }
+        }
+
+        private Vector3 SnapToGround(Vector3 position)
+        {
+            if (groundHeightProvider == null)
+            {
+                return position;
+            }
+
+            return new Vector3(position.X, groundHeightProvider(position.X, position.Z), position.Z);
         }
     }
 }

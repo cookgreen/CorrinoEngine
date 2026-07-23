@@ -53,6 +53,7 @@ namespace CorrinoEngine.UI
                 DrawLabels = false,
                 IconPadding = 4f,
                 IconSelector = actor => actor == null ? 0 : world.GetActorIconTexture(actor.TypeName),
+                ProgressSelector = actor => actor == null ? 0f : world.GetBuildProgressFor(actor.TypeName),
                 TitleSelector = actor => string.Empty,
                 SubtitleSelector = actor => string.Empty,
                 TooltipSelector = actor => BuildTooltip(actor),
@@ -98,9 +99,9 @@ namespace CorrinoEngine.UI
         {
             IsVisible = true;
             isBuildPanelVisible = world.SelectedActor != null && world.CanActorProduce(world.SelectedActor);
-            BlocksWorldInput = buildPanel.HitTest(input.MousePosition);
+            BlocksWorldInput = IsBuildUiHit(input.MousePosition);
 
-            if (isBuildPanelVisible && Math.Abs(input.ScrollDelta) > float.Epsilon && buildPanel.HitTest(input.MousePosition))
+            if (isBuildPanelVisible && Math.Abs(input.ScrollDelta) > float.Epsilon && IsBuildUiHit(input.MousePosition))
             {
                 buildPageIndex += input.ScrollDelta > 0 ? -1 : 1;
             }
@@ -276,6 +277,14 @@ namespace CorrinoEngine.UI
                 ? Color.FromArgb(255, 255, 255, 255)
                 : Color.FromArgb(245, 248, 248, 248);
             button.Brush = Brushes.Black;
+        }
+
+        private bool IsBuildUiHit(OpenTK.Mathematics.Vector2 mousePosition)
+        {
+            return buildPanel.HitTest(mousePosition) ||
+                buildingTabButton.HitTest(mousePosition) ||
+                infantryTabButton.HitTest(mousePosition) ||
+                vehicleTabButton.HitTest(mousePosition);
         }
     }
 }

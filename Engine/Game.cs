@@ -146,7 +146,9 @@ namespace CorrinoEngine
             UiInputState input = CreateUiInputState();
             UIManager.Instance.Layout(new System.Drawing.RectangleF(0, 0, viewportSize.X, viewportSize.Y));
             bool uiVisible = UIManager.Instance.Update(input);
-            if (uiVisible && (input.LeftPressed || input.RightPressed) && UIManager.Instance.IsBlockingWorldInput())
+            bool blockWorldInput = uiVisible && UIManager.Instance.IsBlockingWorldInput();
+            world.SetWorldInputBlocked(blockWorldInput);
+            if (blockWorldInput && input.LeftPressed)
             {
                 world.SuppressNextLeftClick();
             }

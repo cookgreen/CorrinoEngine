@@ -1,12 +1,14 @@
 atreides-carryall:
 	Name: %{str_unit_atreides_carryall_name}Carryall
 	Description: %{str_unit_atreides_carryall_desc}The Carryall is used to ferry Harvesters around the map.
+	Category: aircraft
 	Prerequisites: atreides-hangar
 	Cost: 100
 
 atreides-ornithopter:
 	Name: %{str_unit_atreides_ornithopter_name}Ornithopter
 	Description: %{str_unit_atreides_ornithopter_desc}A high speed, but lightly armored anti infantry flyer.
+	Category: aircraft
 	Prerequisites: atreides-hangar
 	Icon: Textures/AT_Drone.tga
 	Cost: 100
@@ -14,6 +16,7 @@ atreides-ornithopter:
 atreides-drone:
 	Name: %{str_unit_atreides_drone_name}Drone
 	Description: %{str_unit_atreides_drone_desc}This is a small, lightly armored air unit that is used for defence.
+	Category: aircraft
 	Prerequisites: atreides-hangar
 	Icon: Textures/AT_Drone.tga
 	Cost: 100
@@ -21,6 +24,7 @@ atreides-drone:
 atreides-adv-carryall:
 	Name: %{str_unit_atreides_adv_carryall_name}Advanced Carryall
 	Description: %{str_unit_atreides_adv_carryall_desc}Unlike the regular Carryall, this unit can be ordered to pick up specific units, even those that aren't under your control, and bring them to player-selected points on the map.
+	Category: aircraft
 	Prerequisites: atreides-hangar
 	Icon: Textures/AT_ADVCarryall.tga
 	Cost: 100

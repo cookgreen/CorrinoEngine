@@ -27,7 +27,7 @@ namespace CorrinoEngine.Cameras
 				depth * 2f - 1f,
 				1f);
 
-			var inverse = Matrix4.Invert(this.Projection * this.View);
+			var inverse = Matrix4.Invert(this.View * this.Projection);
 			var world = Vector4.TransformRow(clip, inverse);
 			if (System.MathF.Abs(world.W) > float.Epsilon)
 				world /= world.W;
@@ -78,9 +78,16 @@ namespace CorrinoEngine.Cameras
 
 		public Vector2 ToViewport(Vector3 position)
 		{
-			var vector3 = Vector3.TransformVector(position, Matrix4.Mult(this.View, this.Projection));
+			if (this.Size.X <= 0 || this.Size.Y <= 0)
+				return Vector2.Zero;
 
-			return new Vector2((vector3.X + 1) * this.Size.X / 2, (-vector3.Y + 1) * this.Size.Y / 2);
+			Vector4 clip = Vector4.TransformRow(new Vector4(position, 1f), this.View * this.Projection);
+			if (System.MathF.Abs(clip.W) > float.Epsilon)
+				clip /= clip.W;
+
+			return new Vector2(
+				(clip.X + 1f) * this.Size.X * 0.5f,
+				(1f - clip.Y) * this.Size.Y * 0.5f);
 		}
 	}
 

@@ -1,11 +1,13 @@
 atreides-conyard:
 	Name: %{str_building_atreides_conyard_name}Atreides Construction Yard
 	Description: %{str_building_atreides_conyard_desc}Atreides Construction Yard provides all atreides buildings
+	Category: building
 	ProvideBuildings: atreides
     
 atreides-windtrap:
 	Name: %{str_building_atreides_windtrap_name}Atreides Windtrap
 	Description: %{str_building_atreides_windtrap_desc}Atreides Windtrap will train the Atreides infantries
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_WindTrap.tga
@@ -14,6 +16,7 @@ atreides-windtrap:
 atreides-barrack:
 	Name: %{str_building_atreides_barrack_name}Atreides Barrack
 	Description: %{str_building_atreides_barrack_desc}Atreides Barrack will train the Atreides infantries
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Barracks.tga
@@ -22,6 +25,7 @@ atreides-barrack:
 atreides-refinery:
 	Name: %{str_building_atreides_refinery_name}Atreides Refinery
 	Description: %{str_building_atreides_refinery_desc}The Refinery is the basis of all Spice production on Dune.
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Hanger.tga
@@ -30,6 +34,7 @@ atreides-refinery:
 atreides-outpost:
 	Name: %{str_building_atreides_outpost_name}Atreides Outpost
 	Description: %{str_building_atreides_outpost_desc}When constructed, the Outpost will activate your radar screen.
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Outpost.tga
@@ -38,6 +43,7 @@ atreides-outpost:
 atreides-factory:
 	Name: %{str_building_atreides_factory_name}Atreides Factory
 	Description: %{str_building_atreides_factory_desc}Atreides Barrack will produce the vehicles
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Factory.tga
@@ -46,6 +52,7 @@ atreides-factory:
 atreides-hangar:
 	Name: %{str_building_atreides_hangar_name}Atreides Hangar
 	Description: %{str_building_atreides_hangar_desc} The Hangar is where all air-based units are manufactured. 
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Hangar.tga
@@ -54,6 +61,7 @@ atreides-hangar:
 atreides-landingpad:
 	Name: %{str_building_atreides_landingpad_name}Landing Pad 
 	Description: %{str_building_atreides_landingpad_desc}Ornithopters and Gunships must have this building in order to re-arm their weapons.
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Helipad.tga
@@ -62,6 +70,7 @@ atreides-landingpad:
 atreides-starport:
 	Name: %{str_building_atreides_starport_name}Atreides Barrack
 	Description: %{str_building_atreides_starport_desc}The Starport allows you to purchase air and land based vehicles from the CHOAM Merchant's Guild.
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_StarPort.tga
@@ -70,6 +79,7 @@ atreides-starport:
 atreides-machinegunpost:
 	Name: %{str_building_atreides_machinegunpost_name}Atreides Machinegun Post
 	Description: %{str_building_atreides_machinegunpost_desc}This is a defensive structure that is mainly used to stop infantry, but will whittle down vehicles as well.
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Pillbox.tga
@@ -78,6 +88,7 @@ atreides-machinegunpost:
 atreides-rocket-tower:
 	Name: %{str_building_atreides_rocket_tower_name}Atreides Rocket Tower
 	Description: %{str_building_atreides_rocket_tower_desc}Much more powerful than the Machinegun Post, this defensive weapon will take down the heaviest of opponents, including air-based units. 
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_RocketTurret.tga
@@ -86,6 +97,7 @@ atreides-rocket-tower:
 atreides-palace:
 	Name: %{str_building_atreides_palace_name}Atreides Palace
 	Description: %{str_building_atreides_palace_desc}Like all palaces, the Atreides Palace gives you a super weapon. For the Atreides, it is the Hawk Strike.
+	Category: building
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
 	Icon: Textures/AT_Palace.tga

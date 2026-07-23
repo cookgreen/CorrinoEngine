@@ -40,12 +40,20 @@ namespace CorrinoEngine.Core
         private Actor selectedActor;
         private string selectedBuildActorTypeName;
         private bool suppressNextLeftClick;
+        private bool worldInputBlocked;
         private bool wasLeftMouseDown;
         private bool wasRightMouseDown;
         private bool isSelectionDragging;
         private Vector2 selectionStart;
         private Vector2 selectionEnd;
         private readonly List<Vector3> movePathPoints;
+        private bool hasDebugTerrainCursorPoint;
+        private Vector3 debugTerrainCursorPoint;
+        private bool hasDebugFlatCursorPoint;
+        private Vector3 debugFlatCursorPoint;
+        private bool hasDebugLastCommandTarget;
+        private Vector3 debugLastCommandTarget;
+        private Actor debugHoveredActor;
 
         private Camera camera;
         private CameraController camController;
@@ -235,6 +243,7 @@ namespace CorrinoEngine.Core
             ms = mouseState;
             ks = keyboardState;
             camController?.UpdateInput(mouseState, keyboardState);
+            orderManager?.UpdateInput(mouseState, keyboardState);
         }
 
         public void Start()
@@ -326,13 +335,14 @@ namespace CorrinoEngine.Core
 
         public void SpawnActor(Actor actor, Vector3 position)
         {
-            Mesh mesh = assetManager.Load<XbfMesh>(this, actor.ActorData["idle"].Resource);
-            MeshInstance meshInstance = new MeshInstance(mesh);
-            meshInstance.Position = position;
+            EnsureActorMesh(actor, position);
+            actor.SetGroundHeightProvider(SampleWorldHeight);
+            if (!actors.Contains(actor))
+            {
+                actors.Add(actor);
+            }
 
-            actor.Spawn(meshInstance);
-            actors.Add(actor);
-            worldRenderer.RenderObject(meshInstance);
+            worldRenderer.RenderObject(actor.MeshInstance);
         }
 
         private void parseFaction()
@@ -364,7 +374,17 @@ namespace CorrinoEngine.Core
                 pendingPlacementFootprint,
                 currentMap?.Manifest?.TileSize ?? 48f,
                 IsPendingPlacementValid(),
-                movePathPoints);
+                movePathPoints,
+                isEnableDebugMode,
+                hasDebugTerrainCursorPoint,
+                debugTerrainCursorPoint,
+                hasDebugFlatCursorPoint,
+                debugFlatCursorPoint,
+                hasDebugLastCommandTarget,
+                debugLastCommandTarget,
+                debugHoveredActor,
+                GetDebugBuildingBounds(),
+                GetDebugHoveredBuildingBounds());
         }
 
         public void Update(FrameEventArgs args)
@@ -374,6 +394,7 @@ namespace CorrinoEngine.Core
             UpdateProductionQueues((float)args.Time);
             UpdateBuildFeedback((float)args.Time);
             UpdatePlacementPreview();
+            UpdateDebugHitVisualization();
             if (terrain != null)
             {
                 terrainRenderer.UpdateFrame(args);
@@ -382,6 +403,10 @@ namespace CorrinoEngine.Core
             foreach (var actor in actors)
             {
                 actor.Update(args);
+                if (actor.ConsumeConstructionCompleted())
+                {
+                    SetBuildFeedback($"{GetActorDisplayName(actor.ActorData)} construction complete.");
+                }
             }
             sceneManager.Update();
 
@@ -405,8 +430,9 @@ namespace CorrinoEngine.Core
 
                 if (ks.IsKeyDown(Keys.I) && ks.IsKeyDown(Keys.LeftShift))
                 {
-                    using frmMapImport mapImport = new frmMapImport(assetManager);
+                    using frmMapImport mapImport = new frmMapImport(assetManager, modData);
                     mapImport.ShowDialog();
+                    RefreshAvailableMaps();
                 }
             }
         }
@@ -433,29 +459,18 @@ namespace CorrinoEngine.Core
 
         private void LoadInitialMap()
         {
-            string mapsDir = modData.Manifest.MapsDir;
-            if (string.IsNullOrWhiteSpace(mapsDir))
+            RefreshAvailableMaps();
+            if (availableMapPaths == null || availableMapPaths.Count == 0)
             {
                 return;
             }
 
-            string absoluteMapsDir = Path.Combine(modData.FullPath, mapsDir);
-            if (!Directory.Exists(absoluteMapsDir))
+            if (string.IsNullOrWhiteSpace(selectedMapYamlPath) ||
+                !availableMapPaths.Any(path => string.Equals(path, selectedMapYamlPath, StringComparison.OrdinalIgnoreCase)))
             {
-                return;
+                selectedMapYamlPath = availableMapPaths.FirstOrDefault(path => string.Equals(Path.GetFileName(path), "default-map.yaml", StringComparison.OrdinalIgnoreCase))
+                    ?? availableMapPaths[0];
             }
-
-            availableMapPaths = Directory.GetFiles(absoluteMapsDir, "*.yaml", SearchOption.TopDirectoryOnly)
-                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
-                .ToList();
-
-            if (availableMapPaths.Count == 0)
-            {
-                return;
-            }
-
-            selectedMapYamlPath = availableMapPaths.FirstOrDefault(path => string.Equals(Path.GetFileName(path), "default-map.yaml", StringComparison.OrdinalIgnoreCase))
-                ?? availableMapPaths[0];
 
             LoadMapFromPath(selectedMapYamlPath);
         }
@@ -473,6 +488,10 @@ namespace CorrinoEngine.Core
             selectedActors.Clear();
             selectedActor = null;
             selectedBuildActorTypeName = null;
+            movePathPoints.Clear();
+            pendingPlacementActor = null;
+            pendingPlacementPosition = Vector3.Zero;
+            pendingPlacementFootprint = Vector2i.One;
 
             currentMap = new GameMap();
             currentMap.Load(mapYamlPath);
@@ -504,10 +523,17 @@ namespace CorrinoEngine.Core
         {
             if (map?.Metadata?.HasOriginalMapData == true)
             {
-                Terrain originalTerrain = TryBuildOriginalTerrain(map);
-                if (originalTerrain != null)
+                try
                 {
-                    return originalTerrain;
+                    Terrain originalTerrain = TryBuildOriginalTerrain(map);
+                    if (originalTerrain != null)
+                    {
+                        return originalTerrain;
+                    }
+                }
+                catch
+                {
+                    SetBuildFeedback("Original map runtime build failed. Falling back to basic terrain.");
                 }
             }
 
@@ -518,7 +544,6 @@ namespace CorrinoEngine.Core
             currentLightingData = null;
             currentMapMin = Vector2.Zero;
             currentMapMax = new Vector2(map.Manifest.Width * tileSize, map.Manifest.Height * tileSize);
-            availableMapPaths = new List<string>();
 
             foreach (var tile in map.Tiles)
             {
@@ -680,32 +705,35 @@ namespace CorrinoEngine.Core
 
         public Actor QueryActorAtCursor()
         {
-            if (!camera.TryProjectToGround(new Vector2(ms.X, ms.Y), 0f, out Vector3 scenePosition))
+            Vector2 mousePosition = new Vector2(ms.X, ms.Y);
+            Ray ray = camera.GetPickRay(new Vector2(ms.X, ms.Y));
+
+            if (TryProjectCursorToTerrain(mousePosition, out Vector3 groundPosition))
             {
-                return null;
+                Actor buildingHit = QueryBuildingAtGroundPoint(groundPosition);
+                if (buildingHit != null)
+                {
+                    return buildingHit;
+                }
             }
 
             return actors
-                .Where(o => o.MeshInstance != null)
+                .Where(o => o.MeshInstance != null && !o.IsBuilding)
                 .Select(o => new
                 {
                     Actor = o,
-                    Distance = Vector2.Distance(
-                        new Vector2(o.Position.X, o.Position.Z),
-                        new Vector2(scenePosition.X, scenePosition.Z))
+                    Distance = RaySphereDistance(ray, o.Position, ResolvePickRadius(o))
                 })
-                .Where(o => o.Distance <= o.Actor.SelectionRadius)
-                .OrderBy(o => o.Actor.IsBuilding ? 0 : 1)
-                .ThenBy(o => o.Distance)
+                .Where(o => o.Distance.HasValue)
+                .OrderBy(o => o.Distance.Value)
                 .Select(o => o.Actor)
                 .FirstOrDefault();
         }
 
         public Vector3 QueryGroundAtCursor()
         {
-            if (camera.TryProjectToGround(new Vector2(ms.X, ms.Y), 0f, out Vector3 worldPosition))
+            if (TryProjectCursorToTerrain(new Vector2(ms.X, ms.Y), out Vector3 worldPosition))
             {
-                worldPosition.Y = SampleWorldHeight(worldPosition.X, worldPosition.Z);
                 return worldPosition;
             }
 
@@ -744,8 +772,10 @@ namespace CorrinoEngine.Core
                 .Where(actor => actor.MeshInstance != null)
                 .Where(actor =>
                 {
-                    Vector2 screen = camera.ToViewport(actor.Position);
-                    return rect.Contains(screen.X, screen.Y);
+                    RectangleF actorBounds = GetActorScreenBounds(actor);
+                    return actorBounds.Width > 0f &&
+                        actorBounds.Height > 0f &&
+                        actorBounds.IntersectsWith(rect);
                 })
                 .OrderBy(actor => actor.IsBuilding ? 1 : 0)
                 .ThenBy(actor => actor.Position.X)
@@ -784,6 +814,20 @@ namespace CorrinoEngine.Core
             suppressNextLeftClick = true;
         }
 
+        public void SetWorldInputBlocked(bool blocked)
+        {
+            worldInputBlocked = blocked;
+            if (blocked && isSelectionDragging)
+            {
+                isSelectionDragging = false;
+            }
+        }
+
+        public bool IsWorldInputBlocked()
+        {
+            return worldInputBlocked;
+        }
+
         public bool ConsumeRightClick()
         {
             bool isDown = ms.IsButtonDown(MouseButton.Button2);
@@ -805,11 +849,11 @@ namespace CorrinoEngine.Core
                 return true;
             }
 
-            SpawnActor(pendingPlacementActor, pendingPlacementPosition);
+            BeginPlacedBuildingConstruction(pendingPlacementActor, pendingPlacementPosition);
             pendingPlacementActor = null;
             pendingPlacementPosition = Vector3.Zero;
             pendingPlacementFootprint = Vector2i.One;
-            SetBuildFeedback("Building placed.");
+            SetBuildFeedback("Building placed. Construction started.");
             return true;
         }
 
@@ -989,6 +1033,19 @@ namespace CorrinoEngine.Core
             return Math.Clamp(order.Progress / order.Duration, 0, 1);
         }
 
+        public float GetBuildProgressFor(string actorTypeName)
+        {
+            ProductionOrder order = GetSelectedProduction();
+            if (order == null ||
+                !string.Equals(order.ActorTypeName, actorTypeName, StringComparison.OrdinalIgnoreCase) ||
+                order.Duration <= 0f)
+            {
+                return 0f;
+            }
+
+            return Math.Clamp(order.Progress / order.Duration, 0f, 1f);
+        }
+
         public IReadOnlyList<ProductionOrder> GetSelectedProductionQueue()
         {
             if (selectedActor == null)
@@ -1007,15 +1064,44 @@ namespace CorrinoEngine.Core
             }
 
             movePathPoints.Clear();
-            foreach (Actor actor in selectedActors)
+            List<Actor> movableActors = selectedActors.Where(CanActorMove).ToList();
+            if (movableActors.Count == 0)
             {
-                if (!CanActorMove(actor))
-                    continue;
-
-                actor.MoveTo(target);
+                return;
             }
 
-            movePathPoints.Add(target);
+            Vector3 groundedTarget = new Vector3(target.X, SampleWorldHeight(target.X, target.Z), target.Z);
+            Vector3 start = new Vector3(
+                movableActors.Average(actor => actor.Position.X),
+                0f,
+                movableActors.Average(actor => actor.Position.Z));
+            start.Y = SampleWorldHeight(start.X, start.Z);
+
+            BuildMovePath(start, groundedTarget);
+            foreach (Actor actor in movableActors)
+            {
+                actor.MoveTo(groundedTarget);
+            }
+        }
+
+        public Vector3 QueryCommandTargetAtCursor()
+        {
+            Actor actor = QueryActorAtCursor();
+            if (actor != null)
+            {
+                debugLastCommandTarget = new Vector3(actor.Position.X, SampleWorldHeight(actor.Position.X, actor.Position.Z), actor.Position.Z);
+                hasDebugLastCommandTarget = true;
+                return debugLastCommandTarget;
+            }
+
+            Vector3 groundPosition = QueryGroundAtCursor();
+            if (groundPosition != Vector3.Zero)
+            {
+                debugLastCommandTarget = groundPosition;
+                hasDebugLastCommandTarget = true;
+            }
+
+            return groundPosition;
         }
 
         public bool IsPendingPlacementValid()
@@ -1225,12 +1311,12 @@ namespace CorrinoEngine.Core
 
         public bool CanActorProduce(Actor actor)
         {
-            return GetBuildableActors(actor).Any();
+            return actor != null && actor.IsOperational && GetBuildableActors(actor).Any();
         }
 
         public bool CanActorMove(Actor actor)
         {
-            return actor != null && actor.CanMove;
+            return actor != null && actor.IsOperational && actor.CanMove;
         }
 
         private void ApplySelection(IEnumerable<Actor> actorsToSelect)
@@ -1309,13 +1395,14 @@ namespace CorrinoEngine.Core
             }
 
             Actor producedActor = CreateActor(actorTypeName);
-            bool isStructure = CanActorProduce(producedActor);
+            bool isStructure = producedActor.IsBuilding;
             if (isStructure)
             {
+                EnsureActorMesh(producedActor, producer.Position + new Vector3(128, 0, 96));
                 pendingPlacementActor = producedActor;
                 pendingPlacementFootprint = ResolveFootprint(actorTypeName);
                 pendingPlacementPosition = SnapBuildingPosition(producer.Position + new Vector3(128, 0, 96));
-                SetBuildFeedback("Place the building with LMB or cancel with RMB.");
+                SetBuildFeedback("Production complete. Place the building with LMB or cancel with RMB.");
                 return;
             }
 
@@ -1335,7 +1422,7 @@ namespace CorrinoEngine.Core
 
         private Vector3 SnapBuildingPosition(Vector3 worldPosition)
         {
-            const float gridSize = 32f;
+            float gridSize = currentMap?.Manifest?.TileSize > 0f ? currentMap.Manifest.TileSize : 32f;
             float snappedX = MathF.Round(worldPosition.X / gridSize) * gridSize;
             float snappedZ = MathF.Round(worldPosition.Z / gridSize) * gridSize;
             return new Vector3(
@@ -1391,6 +1478,23 @@ namespace CorrinoEngine.Core
             if (string.IsNullOrWhiteSpace(actorTypeName))
             {
                 return Vector2i.One;
+            }
+
+            ActorData actorData = modData.Manifest.ActorDataList.FirstOrDefault(candidate =>
+                string.Equals(candidate.TypeName, actorTypeName, StringComparison.OrdinalIgnoreCase));
+            string footprintValue = GetActorProperty(actorData, "Footprint");
+            if (!string.IsNullOrWhiteSpace(footprintValue))
+            {
+                string normalized = footprintValue.Trim().ToLowerInvariant().Replace(" ", string.Empty);
+                string[] parts = normalized.Split('x', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 2 &&
+                    int.TryParse(parts[0], out int width) &&
+                    int.TryParse(parts[1], out int height) &&
+                    width > 0 &&
+                    height > 0)
+                {
+                    return new Vector2i(width, height);
+                }
             }
 
             string lowerType = actorTypeName.ToLowerInvariant();
@@ -1807,6 +1911,270 @@ namespace CorrinoEngine.Core
 
             float remainingRatio = 1f - Math.Clamp(order.Progress / order.Duration, 0, 1);
             return (int)Math.Round(order.Cost * remainingRatio);
+        }
+
+        private RectangleF GetActorScreenBounds(Actor actor)
+        {
+            if (actor?.MeshInstance == null)
+            {
+                return RectangleF.Empty;
+            }
+
+            float pickRadius = ResolvePickRadius(actor);
+            Vector2 center = camera.ToViewport(actor.Position);
+            Vector2 offsetX = camera.ToViewport(actor.Position + new Vector3(pickRadius, 0f, 0f));
+            Vector2 offsetZ = camera.ToViewport(actor.Position + new Vector3(0f, 0f, pickRadius));
+            float halfWidth = Math.Max(8f, new[]
+            {
+                MathF.Abs(offsetX.X - center.X),
+                MathF.Abs(offsetZ.X - center.X)
+            }.Max());
+            float halfHeight = Math.Max(8f, new[]
+            {
+                MathF.Abs(offsetX.Y - center.Y),
+                MathF.Abs(offsetZ.Y - center.Y)
+            }.Max());
+            return new RectangleF(center.X - halfWidth, center.Y - halfHeight, halfWidth * 2f, halfHeight * 2f);
+        }
+
+        private Actor QueryBuildingAtGroundPoint(Vector3 groundPosition)
+        {
+            float tileSize = currentMap?.Manifest?.TileSize > 0 ? currentMap.Manifest.TileSize : 48f;
+            return actors
+                .Where(actor => actor?.MeshInstance != null && actor.IsBuilding)
+                .Select(actor => new
+                {
+                    Actor = actor,
+                    Bounds = GetBuildingWorldBounds(actor, tileSize)
+                })
+                .Where(entry =>
+                    groundPosition.X >= entry.Bounds.Left &&
+                    groundPosition.X <= entry.Bounds.Right &&
+                    groundPosition.Z >= entry.Bounds.Top &&
+                    groundPosition.Z <= entry.Bounds.Bottom)
+                .OrderBy(entry => entry.Bounds.Width * entry.Bounds.Height)
+                .Select(entry => entry.Actor)
+                .FirstOrDefault();
+        }
+
+        private RectangleF GetBuildingWorldBounds(Actor actor, float tileSize)
+        {
+            Vector2i footprint = ResolveFootprint(actor.ActorData.TypeName);
+            float width = footprint.X * tileSize;
+            float height = footprint.Y * tileSize;
+            return new RectangleF(
+                actor.Position.X - width * 0.5f,
+                actor.Position.Z - height * 0.5f,
+                width,
+                height);
+        }
+
+        private void UpdateDebugHitVisualization()
+        {
+            Vector2 mousePosition = new Vector2(ms.X, ms.Y);
+            hasDebugTerrainCursorPoint = TryProjectCursorToTerrain(mousePosition, out debugTerrainCursorPoint);
+            hasDebugFlatCursorPoint = camera.TryProjectToGround(mousePosition, 0f, out debugFlatCursorPoint);
+            debugHoveredActor = QueryActorAtCursor();
+        }
+
+        private IReadOnlyList<RectangleF> GetDebugBuildingBounds()
+        {
+            float tileSize = currentMap?.Manifest?.TileSize > 0 ? currentMap.Manifest.TileSize : 48f;
+            return actors
+                .Where(actor => actor?.MeshInstance != null && actor.IsBuilding)
+                .Select(actor => GetBuildingWorldBounds(actor, tileSize))
+                .ToList();
+        }
+
+        private RectangleF? GetDebugHoveredBuildingBounds()
+        {
+            if (debugHoveredActor == null || !debugHoveredActor.IsBuilding)
+            {
+                return null;
+            }
+
+            float tileSize = currentMap?.Manifest?.TileSize > 0 ? currentMap.Manifest.TileSize : 48f;
+            return GetBuildingWorldBounds(debugHoveredActor, tileSize);
+        }
+
+        private static float ScreenDistanceSquared(RectangleF bounds, Vector2 mousePosition)
+        {
+            float centerX = bounds.X + bounds.Width * 0.5f;
+            float centerY = bounds.Y + bounds.Height * 0.5f;
+            float dx = centerX - mousePosition.X;
+            float dy = centerY - mousePosition.Y;
+            return dx * dx + dy * dy;
+        }
+
+        private float ResolvePickRadius(Actor actor)
+        {
+            if (actor == null)
+            {
+                return 0f;
+            }
+
+            return actor.IsBuilding
+                ? actor.SelectionRadius * 0.45f
+                : actor.SelectionRadius * 0.7f;
+        }
+
+        private static float? RaySphereDistance(Ray ray, Vector3 center, float radius)
+        {
+            Vector3 oc = ray.Origin - center;
+            float a = ray.Direction.LengthSquared;
+            float b = 2f * Vector3.Dot(oc, ray.Direction);
+            float c = oc.LengthSquared - radius * radius;
+            float discriminant = b * b - 4f * a * c;
+            if (discriminant < 0f)
+            {
+                return null;
+            }
+
+            float sqrt = MathF.Sqrt(discriminant);
+            float distanceA = (-b - sqrt) / (2f * a);
+            float distanceB = (-b + sqrt) / (2f * a);
+            if (distanceA >= 0f)
+            {
+                return distanceA;
+            }
+
+            if (distanceB >= 0f)
+            {
+                return distanceB;
+            }
+
+            return null;
+        }
+
+        private bool TryProjectCursorToTerrain(Vector2 screenPosition, out Vector3 worldPosition)
+        {
+            if (currentHeightField == null || !currentHeightField.IsLoaded)
+            {
+                if (camera.TryProjectToGround(screenPosition, 0f, out worldPosition))
+                {
+                    worldPosition.Y = SampleWorldHeight(worldPosition.X, worldPosition.Z);
+                    return true;
+                }
+
+                worldPosition = Vector3.Zero;
+                return false;
+            }
+
+            Ray ray = camera.GetPickRay(screenPosition);
+            float maxDistance = Math.Max((currentMapMax - currentMapMin).Length * 2f, 4096f);
+            float previousDistance = 0f;
+            Vector3 previousPoint = ray.Origin;
+            float previousDelta = previousPoint.Y - SampleWorldHeight(previousPoint.X, previousPoint.Z);
+
+            const int stepCount = 96;
+            for (int i = 1; i <= stepCount; i++)
+            {
+                float distance = maxDistance * i / stepCount;
+                Vector3 point = ray.Origin + ray.Direction * distance;
+                float delta = point.Y - SampleWorldHeight(point.X, point.Z);
+                if (delta <= 0f && previousDelta >= 0f)
+                {
+                    worldPosition = RefineTerrainIntersection(ray, previousDistance, distance);
+                    return true;
+                }
+
+                previousDistance = distance;
+                previousPoint = point;
+                previousDelta = delta;
+            }
+
+            worldPosition = Vector3.Zero;
+            return false;
+        }
+
+        private Vector3 RefineTerrainIntersection(Ray ray, float minDistance, float maxDistance)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                float midDistance = (minDistance + maxDistance) * 0.5f;
+                Vector3 midPoint = ray.Origin + ray.Direction * midDistance;
+                float delta = midPoint.Y - SampleWorldHeight(midPoint.X, midPoint.Z);
+                if (delta > 0f)
+                {
+                    minDistance = midDistance;
+                }
+                else
+                {
+                    maxDistance = midDistance;
+                }
+            }
+
+            Vector3 point = ray.Origin + ray.Direction * maxDistance;
+            return new Vector3(point.X, SampleWorldHeight(point.X, point.Z), point.Z);
+        }
+
+        private void BuildMovePath(Vector3 start, Vector3 target)
+        {
+            const int segmentCount = 18;
+            for (int i = 0; i < segmentCount; i++)
+            {
+                float t = segmentCount == 1 ? 1f : i / (float)(segmentCount - 1);
+                float x = MathHelper.Lerp(start.X, target.X, t);
+                float z = MathHelper.Lerp(start.Z, target.Z, t);
+                movePathPoints.Add(new Vector3(x, SampleWorldHeight(x, z) + 2f, z));
+            }
+        }
+
+        private void BeginPlacedBuildingConstruction(Actor actor, Vector3 position)
+        {
+            if (actor == null)
+            {
+                return;
+            }
+
+            SpawnActor(actor, position);
+            actor.StartConstruction(Math.Max(1.25f, ResolveBuildDuration(actor.ActorData.TypeName) * 0.65f));
+        }
+
+        private void EnsureActorMesh(Actor actor, Vector3 position)
+        {
+            if (actor == null ||
+                actor.ActorData == null ||
+                actor.ActorData.AnimSettings?.AnimSettings == null ||
+                actor.ActorData.AnimSettings.AnimSettings.Count == 0 ||
+                actor.ActorData["idle"] == null)
+            {
+                return;
+            }
+
+            Vector3 groundedPosition = new Vector3(position.X, SampleWorldHeight(position.X, position.Z), position.Z);
+            if (actor.MeshInstance == null)
+            {
+                Mesh mesh = assetManager.Load<XbfMesh>(this, actor.ActorData["idle"].Resource);
+                MeshInstance meshInstance = new MeshInstance(mesh);
+                meshInstance.Position = groundedPosition;
+                actor.Spawn(meshInstance);
+            }
+            else
+            {
+                actor.MeshInstance.Position = groundedPosition;
+            }
+        }
+
+        private void RefreshAvailableMaps()
+        {
+            string mapsDir = modData.Manifest.MapsDir;
+            if (string.IsNullOrWhiteSpace(mapsDir))
+            {
+                availableMapPaths = new List<string>();
+                return;
+            }
+
+            string absoluteMapsDir = Path.Combine(modData.FullPath, mapsDir);
+            if (!Directory.Exists(absoluteMapsDir))
+            {
+                availableMapPaths = new List<string>();
+                return;
+            }
+
+            availableMapPaths = Directory.GetFiles(absoluteMapsDir, "*.yaml", SearchOption.TopDirectoryOnly)
+                .OrderBy(path => path, StringComparer.OrdinalIgnoreCase)
+                .ToList();
         }
 	}
 }

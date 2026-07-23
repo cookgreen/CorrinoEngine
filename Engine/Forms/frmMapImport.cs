@@ -1,5 +1,6 @@
 using CorrinoEngine.Assets;
 using CorrinoEngine.Maps;
+using CorrinoEngine.Mods;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -17,11 +18,21 @@ namespace CorrinoEngine.Forms
         private readonly Button btnConvert;
         private readonly ListBox lstMaps;
         private readonly string modMapsDir;
+        private readonly string mapsDirDisplay;
 
-        public frmMapImport(AssetManager assetManager)
+        public frmMapImport(AssetManager assetManager, ModData modData)
         {
             this.assetManager = assetManager;
-            modMapsDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "mods", "ebfd", "Maps");
+            string relativeMapsDir = modData?.Manifest?.MapsDir;
+            if (string.IsNullOrWhiteSpace(relativeMapsDir))
+            {
+                relativeMapsDir = Path.Combine("mods", "ebfd", "Maps");
+            }
+
+            modMapsDir = modData != null
+                ? Path.Combine(modData.FullPath, relativeMapsDir)
+                : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, relativeMapsDir);
+            mapsDirDisplay = modMapsDir;
             Text = "Import Original Map";
             Width = 720;
             Height = 520;
@@ -146,7 +157,7 @@ namespace CorrinoEngine.Forms
             builder.AppendLine("\tMapScale: 0.0625");
 
             File.WriteAllText(outputPath, builder.ToString(), Encoding.UTF8);
-            MessageBox.Show($"Converted to {outputPath}", "Map Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            MessageBox.Show($"Converted to {outputPath}\nMaps folder: {mapsDirDisplay}", "Map Import", MessageBoxButtons.OK, MessageBoxIcon.Information);
         }
     }
 }

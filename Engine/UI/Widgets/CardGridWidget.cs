@@ -14,6 +14,7 @@ namespace CorrinoEngine.UI.Widgets
         public Func<T, string> SubtitleSelector { get; set; }
         public Func<T, string> TooltipSelector { get; set; }
         public Func<T, int> IconSelector { get; set; }
+        public Func<T, float> ProgressSelector { get; set; }
         public Func<T, bool> EnabledSelector { get; set; }
         public Func<T, bool> SelectedSelector { get; set; }
         public Action<T> ItemClicked { get; set; }
@@ -98,6 +99,12 @@ namespace CorrinoEngine.UI.Widgets
                     context.DrawRect?.Invoke(iconRect.X - 2, iconRect.Y - 2, iconRect.Width + 4, iconRect.Height + 4, hovered ? IconHoverFrameColor : IconFrameColor);
                     context.DrawRect?.Invoke(iconRect.X, iconRect.Y, iconRect.Width, iconRect.Height, Color.FromArgb(120, 9, 12, 16));
                     context.DrawTexture?.Invoke(iconRect.X + 4, iconRect.Y + 4, iconRect.Width - 8, iconRect.Height - 8, iconTexture, Color.White, 180f);
+                }
+
+                float progress = Math.Clamp(ProgressSelector?.Invoke(item) ?? 0f, 0f, 1f);
+                if (progress > 0f)
+                {
+                    DrawBuildClockOverlay(context, iconRect, progress);
                 }
                 if (DrawLabels)
                 {
@@ -200,6 +207,59 @@ namespace CorrinoEngine.UI.Widgets
             }
 
             return lines;
+        }
+
+        private void DrawBuildClockOverlay(UiRenderContext context, RectangleF iconRect, float progress)
+        {
+            float border = Math.Max(2f, iconRect.Width * 0.035f);
+            Color borderColor = Color.FromArgb(235, 18, 18, 18);
+            Color fillColor = Color.FromArgb(118, 12, 14, 18);
+            context.DrawRect?.Invoke(iconRect.X, iconRect.Y, iconRect.Width, iconRect.Height, fillColor);
+            context.DrawRect?.Invoke(iconRect.X, iconRect.Y, iconRect.Width, border, borderColor);
+            context.DrawRect?.Invoke(iconRect.X, iconRect.Bottom - border, iconRect.Width, border, borderColor);
+            context.DrawRect?.Invoke(iconRect.X, iconRect.Y, border, iconRect.Height, borderColor);
+            context.DrawRect?.Invoke(iconRect.Right - border, iconRect.Y, border, iconRect.Height, borderColor);
+
+            float clamped = Math.Clamp(progress, 0f, 1f);
+            PointF center = new PointF(iconRect.X + iconRect.Width * 0.5f, iconRect.Y + iconRect.Height * 0.5f);
+            PointF start = new PointF(center.X, iconRect.Y);
+            PointF end = GetClockEdgePoint(iconRect, clamped);
+            Color handColor = Color.FromArgb(235, 12, 12, 12);
+            float handThickness = Math.Max(2f, iconRect.Width * 0.03f);
+            context.DrawLine?.Invoke(center.X, center.Y, start.X, start.Y, handColor, handThickness);
+            context.DrawLine?.Invoke(center.X, center.Y, end.X, end.Y, handColor, handThickness);
+        }
+
+        private static PointF GetClockEdgePoint(RectangleF rect, float progress)
+        {
+            float perimeter = rect.Width * 2f + rect.Height * 2f;
+            float offset = perimeter * progress;
+            float halfWidth = rect.Width * 0.5f;
+            if (offset <= halfWidth)
+            {
+                return new PointF(rect.X + halfWidth + offset, rect.Y);
+            }
+
+            offset -= halfWidth;
+            if (offset <= rect.Height)
+            {
+                return new PointF(rect.Right, rect.Y + offset);
+            }
+
+            offset -= rect.Height;
+            if (offset <= rect.Width)
+            {
+                return new PointF(rect.Right - offset, rect.Bottom);
+            }
+
+            offset -= rect.Width;
+            if (offset <= rect.Height)
+            {
+                return new PointF(rect.X, rect.Bottom - offset);
+            }
+
+            offset -= rect.Height;
+            return new PointF(rect.X + offset, rect.Y);
         }
     }
 }

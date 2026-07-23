@@ -26,8 +26,24 @@ namespace CorrinoEngine.Orders
             this.cam = cam;
         }
 
+        public void UpdateInput(MouseState mouseState, KeyboardState keyboardState)
+        {
+            ms = mouseState;
+            ks = keyboardState;
+        }
+
         public void Update()
         {
+            if (world.IsWorldInputBlocked())
+            {
+                if (!ms.IsButtonDown(MouseButton.Button1) && world.IsSelectionDragging)
+                {
+                    world.EndSelectionDrag();
+                }
+
+                return;
+            }
+
             if (world.IsInBuildingPlacementMode)
             {
                 if (world.ConsumeLeftClick())
@@ -57,15 +73,6 @@ namespace CorrinoEngine.Orders
                 }
             }
 
-            if (ks.IsKeyDown(Keys.X) && world.ConsumeLeftClick())//X + Left Mouse = Place building
-            {
-                Order newOrder = new PlaceBuildingOrder(cam, ks, ms);
-                newOrder.OrderExecuted += NewOrder_OrderExecuted;
-                newOrder.Execute("atreides-barrack");
-                historyOrders.Push(newOrder);
-                return;
-            }
-
             if (!ms.IsButtonDown(MouseButton.Button1) && world.IsSelectionDragging)
             {
                 world.EndSelectionDrag();
@@ -74,10 +81,7 @@ namespace CorrinoEngine.Orders
                     world.SelectActorsInRectangle(world.SelectionRectangle);
                     return;
                 }
-            }
 
-            if (world.ConsumeLeftClick())
-            {
                 var actor = world.QueryActorAtCursor();
                 Order newOrder = new SelectUnitOrder(cam, ks, ms);
                 newOrder.OrderExecuted += NewOrder_OrderExecuted;
@@ -88,7 +92,7 @@ namespace CorrinoEngine.Orders
 
             if (world.ConsumeRightClick())
             {
-                Vector3 groundPosition = world.QueryGroundAtCursor();
+                Vector3 groundPosition = world.QueryCommandTargetAtCursor();
                 if (groundPosition != Vector3.Zero)
                 {
                     Order newOrder = new MoveActorOrder(cam, ks, ms);

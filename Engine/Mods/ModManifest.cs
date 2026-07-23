@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.Fields;
+using CorrinoEngine.Fields;
 using CorrinoEngine.FileFormats;
 using System;
 using System.Collections.Generic;
@@ -116,6 +116,7 @@ namespace CorrinoEngine.Mods
         {
             List<ActorPropertyData> actorDataFields = new List<ActorPropertyData>();
             MiniYaml miniYaml = new MiniYaml(Path.Combine(modData.FullPath, path));
+            string actorCategory = ResolveActorCategoryFromSettingsPath(path);
             foreach (var node in miniYaml.Nodes)
             {
                 ActorPropertyData actorDataField = new ActorPropertyData(node.Name);
@@ -130,9 +131,42 @@ namespace CorrinoEngine.Mods
                         actorDataField.AppendActorProperty(subNode.Name, subNode.Value);
                     }
                 }
+
+                if (!string.IsNullOrWhiteSpace(actorCategory) &&
+                    !actorDataField.Properties.ContainsKey("ActorCategory"))
+                {
+                    actorDataField.AppendActorProperty("ActorCategory", actorCategory);
+                }
+
                 actorDataFields.Add(actorDataField);
             }
             return actorDataFields;
+        }
+
+        private static string ResolveActorCategoryFromSettingsPath(string path)
+        {
+            string normalized = path?.Replace('\\', '/').ToLowerInvariant() ?? string.Empty;
+            if (normalized.Contains("building"))
+            {
+                return "building";
+            }
+
+            if (normalized.Contains("vehicle"))
+            {
+                return "vehicle";
+            }
+
+            if (normalized.Contains("infantry") || normalized.Contains("unit"))
+            {
+                return "unit";
+            }
+
+            if (normalized.Contains("air"))
+            {
+                return "aircraft";
+            }
+
+            return string.Empty;
         }
 
         private string parseActorSubDataField(MiniYamlNode node)

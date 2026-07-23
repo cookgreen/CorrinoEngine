@@ -149,7 +149,9 @@ namespace CorrinoEngine.Maps
                 return 0;
             }
 
-            return float.Parse(value, CultureInfo.InvariantCulture);
+            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float result)
+                ? result
+                : 0f;
         }
 
         private static bool? ParseBool(string value)
@@ -265,15 +267,15 @@ namespace CorrinoEngine.Maps
                 }
                 else if (node.Name == "Width")
                 {
-                    Width = int.Parse(node.Value);
+                    Width = int.TryParse(node.Value, out int width) ? width : Width;
                 }
                 else if (node.Name == "Height")
                 {
-                    Height = int.Parse(node.Value);
+                    Height = int.TryParse(node.Value, out int height) ? height : Height;
                 }
                 else if (node.Name == "TileSize")
                 {
-                    TileSize = float.Parse(node.Value, CultureInfo.InvariantCulture);
+                    TileSize = ParseManifestFloat(node.Value, TileSize);
                 }
                 else if (node.Name == "TileMesh")
                 {
@@ -289,9 +291,16 @@ namespace CorrinoEngine.Maps
                 }
                 else if (node.Name == "TileUvScale")
                 {
-                    TileUvScale = float.Parse(node.Value, CultureInfo.InvariantCulture);
+                    TileUvScale = ParseManifestFloat(node.Value, TileUvScale);
                 }
             }
+        }
+
+        private static float ParseManifestFloat(string value, float fallback)
+        {
+            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out float result)
+                ? result
+                : fallback;
         }
     }
 

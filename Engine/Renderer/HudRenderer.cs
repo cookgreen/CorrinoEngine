@@ -137,6 +137,7 @@ namespace CorrinoEngine.Renderer
                 SmallFont = smallFont,
                 DrawRect = DrawRect,
                 DrawTexture = DrawTexture,
+                DrawLine = DrawLine,
                 DrawText = (text, font, brush, point) => textRenderer?.DrawString(text, font, brush, point),
                 MeasureText = (text, font) => textRenderer?.MeasureString(text ?? string.Empty, font ?? bodyFont) ?? SizeF.Empty
             };
@@ -163,6 +164,20 @@ namespace CorrinoEngine.Renderer
         private void DrawTexture(float x, float y, float width, float height, int texture, Color color, float rotationDegrees)
         {
             DrawQuad(x, y, width, height, color, texture, true, rotationDegrees);
+        }
+
+        private void DrawLine(float x0, float y0, float x1, float y1, Color color, float thickness)
+        {
+            float dx = x1 - x0;
+            float dy = y1 - y0;
+            float length = MathF.Sqrt(dx * dx + dy * dy);
+            if (length <= float.Epsilon)
+            {
+                return;
+            }
+
+            float angle = MathHelper.RadiansToDegrees(MathF.Atan2(dy, dx));
+            DrawQuad(x0, y0 - thickness * 0.5f, length, thickness, color, 0, false, angle);
         }
 
 
