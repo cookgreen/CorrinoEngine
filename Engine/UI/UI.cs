@@ -1,9 +1,3 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace CorrinoEngine.UI
 {
     /// <summary>
@@ -11,5 +5,21 @@ namespace CorrinoEngine.UI
     /// </summary>
     public abstract class UI
     {
+        public Widget Root { get; protected set; }
+
+        public virtual void Layout(System.Drawing.RectangleF viewport)
+        {
+            Root?.Layout(viewport);
+        }
+
+        public virtual void Update(UiInputState input)
+        {
+            Root?.HandleInput(input);
+        }
+
+        public virtual void Render(UiRenderContext context)
+        {
+            Root?.Render(context);
+        }
     }
 }

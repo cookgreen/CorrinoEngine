@@ -48,5 +48,10 @@ namespace CorrinoEngine.Topography
             this.z = z;
             this.isBuildable = isBuildable;
         }
+
+        public TerrainTile(int x, int y, int z, bool isBuildable = true)
+            : this(null, x, y, z, isBuildable)
+        {
+        }
     }
 }

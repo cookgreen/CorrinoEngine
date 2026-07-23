@@ -2,12 +2,14 @@ using CorrinoEngine.FileFormats;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System;
 
 namespace CorrinoEngine.Maps
 {
     public class GameMap
     {
         public GameMapManifest Manifest { get; set; }
+        public GameMapMetadata Metadata { get; set; }
 
         public List<GameMapTile> Tiles { get; set; }
         public List<GameMapActor> Actors { get; set; }
@@ -15,6 +17,7 @@ namespace CorrinoEngine.Maps
         public GameMap()
         {
             Manifest = new GameMapManifest();
+            Metadata = new GameMapMetadata();
             Tiles = new List<GameMapTile>();
             Actors = new List<GameMapActor>();
         }
@@ -36,6 +39,10 @@ namespace CorrinoEngine.Maps
                 else if (node.Name.StartsWith("Actor@"))
                 {
                     Actors.Add(ParseActor(node));
+                }
+                else if (node.Name == "Metadata")
+                {
+                    ParseMetadata(node);
                 }
             }
 
@@ -159,6 +166,41 @@ namespace CorrinoEngine.Maps
 
             return null;
         }
+
+        private void ParseMetadata(MiniYamlNode node)
+        {
+            foreach (var subNode in node.ChildNodes)
+            {
+                if (subNode.Name == "OriginalMapDir")
+                {
+                    Metadata.OriginalMapDir = subNode.Value;
+                }
+                else if (subNode.Name == "OriginalMapXbf")
+                {
+                    Metadata.OriginalMapXbf = subNode.Value;
+                }
+                else if (subNode.Name == "GroundColor")
+                {
+                    Metadata.GroundColor = subNode.Value;
+                }
+                else if (subNode.Name == "GroundPalette")
+                {
+                    Metadata.GroundPalette = subNode.Value;
+                }
+                else if (subNode.Name == "GroundLight")
+                {
+                    Metadata.GroundLight = subNode.Value;
+                }
+                else if (subNode.Name == "GroundLit")
+                {
+                    Metadata.GroundLit = subNode.Value;
+                }
+                else if (subNode.Name == "MapScale")
+                {
+                    Metadata.MapScale = ParseFloat(subNode.Value);
+                }
+            }
+        }
     }
 
     public class GameMapTile
@@ -251,5 +293,18 @@ namespace CorrinoEngine.Maps
                 }
             }
         }
+    }
+
+    public class GameMapMetadata
+    {
+        public string OriginalMapDir { get; set; }
+        public string OriginalMapXbf { get; set; }
+        public string GroundColor { get; set; }
+        public string GroundPalette { get; set; }
+        public string GroundLight { get; set; }
+        public string GroundLit { get; set; }
+        public float MapScale { get; set; } = 0.0625f;
+        public bool HasOriginalMapData =>
+            !string.IsNullOrWhiteSpace(OriginalMapDir) || !string.IsNullOrWhiteSpace(OriginalMapXbf);
     }
 }

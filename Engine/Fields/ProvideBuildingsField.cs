@@ -1,4 +1,4 @@
-﻿using CorrinoEngine.UI;
+using CorrinoEngine.UI;
 using CorrinoEngine.Forms;
 using System;
 using System.Collections.Generic;
@@ -29,7 +29,7 @@ namespace CorrinoEngine.Fields
 
         public override void Execute(params object[] param)
         {
-            UIManager.Instance.StartUI("BuildQueueUI");
+            UIManager.Instance.StartUI("WorldHud");
         }
     }
 }

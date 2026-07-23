@@ -1,4 +1,5 @@
 using CorrinoEngine.Assets;
+using CorrinoEngine.Maps;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -105,23 +106,38 @@ namespace CorrinoEngine.Forms
             string mapDir = txtMapPath.Text.Replace('\\', '/');
             string mapName = mapDir.Split('/').Last();
             string xbfPath = assetManager.Read(mapDir + "/test.xbf") != null ? mapDir + "/test.xbf" : mapDir + "/debug.xbf";
+            using Stream mapStream = assetManager.Read(xbfPath);
+            if (mapStream == null)
+            {
+                MessageBox.Show("Cannot read selected map XBF.", "Map Import", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
+            MapXbf mapXbf = MapXbf.Load(mapStream);
             bool hasGroundColor = assetManager.Read(mapDir + "/test.CPT") != null;
+            bool hasGroundPalette = assetManager.Read(mapDir + "/test.CPF") != null;
             bool hasGroundLight = assetManager.Read(mapDir + "/texture.dat") != null;
+            bool hasGroundLit = assetManager.Read(mapDir + "/test.lit") != null;
+            int width = mapXbf.MapSize.X > 0 ? mapXbf.MapSize.X : 128;
+            int height = mapXbf.MapSize.Y > 0 ? mapXbf.MapSize.Y : 128;
 
             var builder = new StringBuilder();
             builder.AppendLine("Map:");
             builder.AppendLine($"\tName: {mapName}");
             builder.AppendLine("\tAuthor: Imported from original map");
-            builder.AppendLine("\tWidth: 128");
-            builder.AppendLine("\tHeight: 128");
-            builder.AppendLine("\tTileSize: 64");
-            builder.AppendLine($"\tTileResource: {xbfPath}");
+            builder.AppendLine($"\tWidth: {width}");
+            builder.AppendLine($"\tHeight: {height}");
+            builder.AppendLine("\tTileSize: 32");
             builder.AppendLine("\tTileUvScale: 1");
             builder.AppendLine();
             builder.AppendLine("Metadata:");
             builder.AppendLine($"\tOriginalMapDir: {mapDir}");
-            builder.AppendLine($"\tGroundColor: {(hasGroundColor ? "test.CPT" : string.Empty)}");
-            builder.AppendLine($"\tGroundLight: {(hasGroundLight ? "texture.dat" : string.Empty)}");
+            builder.AppendLine($"\tOriginalMapXbf: {xbfPath}");
+            builder.AppendLine($"\tGroundColor: {(hasGroundColor ? mapDir + "/test.CPT" : string.Empty)}");
+            builder.AppendLine($"\tGroundPalette: {(hasGroundPalette ? mapDir + "/test.CPF" : string.Empty)}");
+            builder.AppendLine($"\tGroundLight: {(hasGroundLight ? mapDir + "/texture.dat" : string.Empty)}");
+            builder.AppendLine($"\tGroundLit: {(hasGroundLit ? mapDir + "/test.lit" : string.Empty)}");
+            builder.AppendLine("\tMapScale: 0.0625");
 
             File.WriteAllText(outputPath, builder.ToString(), Encoding.UTF8);
             MessageBox.Show($"Converted to {outputPath}", "Map Import", MessageBoxButtons.OK, MessageBoxIcon.Information);

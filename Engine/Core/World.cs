@@ -12,6 +12,7 @@ using CorrinoEngine.Scenes;
 using CorrinoEngine.Topography;
 using CorrinoEngine.UI;
 using CorrinoEngine.Translation;
+using LibEmperor;
 using OpenTK.Mathematics;
 using OpenTK.Windowing.Common;
 using OpenTK.Windowing.GraphicsLibraryFramework;
@@ -46,6 +47,12 @@ namespace CorrinoEngine.Core
         private TerrainRenderer terrainRenderer;
         private Terrain terrain;
         private GameMap currentMap;
+        private MapHeightField currentHeightField;
+        private MapNavigationData currentNavigationData;
+        private MapLightingData currentLightingData;
+        private Vector2 currentMapMin;
+        private Vector2 currentMapMax;
+        private readonly Dictionary<string, int> actorIconTextures = new(StringComparer.OrdinalIgnoreCase);
 
         private OrderManager orderManager;
         private SceneManager sceneManager;
@@ -190,10 +197,23 @@ namespace CorrinoEngine.Core
             terrainRenderer = new TerrainRenderer();
         }
 
+        public void UpdateInput(MouseState mouseState, KeyboardState keyboardState)
+        {
+            ms = mouseState;
+            ks = keyboardState;
+            camController?.UpdateInput(mouseState, keyboardState);
+        }
+
         public void Start()
         {
             LoadDefaultMap();
+            sceneManager.StartNewScene("MainMenu");
+        }
+
+        public void EnterInnerGame()
+        {
             sceneManager.StartNewScene("InnerGame");
+            UIManager.Instance.StartUI("WorldHud");
         }
 
         public void Resize(Vector2 viewportSize)
@@ -362,20 +382,12 @@ namespace CorrinoEngine.Core
 
             currentMap = new GameMap();
             currentMap.Load(mapPath);
-            UpdateCameraBounds(currentMap);
 
             terrain = BuildTerrain(currentMap);
             terrainRenderer.RenderTerrain(terrain);
+            UpdateCameraBounds(currentMap);
 
-            foreach (var actor in currentMap.Actors)
-            {
-                if (string.IsNullOrWhiteSpace(actor.Type))
-                {
-                    continue;
-                }
-
-                SpawnActor(CreateActor(actor.Type), new Vector3(actor.X, actor.Y, actor.Z));
-            }
+            SpawnMapActors(currentMap);
         }
 
         private void UpdateCameraBounds(GameMap map)
@@ -396,8 +408,22 @@ namespace CorrinoEngine.Core
 
         private Terrain BuildTerrain(GameMap map)
         {
+            if (map?.Metadata?.HasOriginalMapData == true)
+            {
+                Terrain originalTerrain = TryBuildOriginalTerrain(map);
+                if (originalTerrain != null)
+                {
+                    return originalTerrain;
+                }
+            }
+
             Terrain newTerrain = new Terrain(terrainRenderer);
             float tileSize = map.Manifest.TileSize;
+            currentHeightField = null;
+            currentNavigationData = null;
+            currentLightingData = null;
+            currentMapMin = Vector2.Zero;
+            currentMapMax = new Vector2(map.Manifest.Width * tileSize, map.Manifest.Height * tileSize);
 
             foreach (var tile in map.Tiles)
             {
@@ -407,6 +433,100 @@ namespace CorrinoEngine.Core
             }
 
             return newTerrain;
+        }
+
+        private Terrain TryBuildOriginalTerrain(GameMap map)
+        {
+            map.Actors.Clear();
+            string mapXbfPath = ResolveOriginalMapXbfPath(map);
+            if (string.IsNullOrWhiteSpace(mapXbfPath))
+            {
+                return null;
+            }
+
+            using Stream stream = assetManager.Read(mapXbfPath);
+            if (stream == null)
+            {
+                return null;
+            }
+
+            MapXbf mapXbf = MapXbf.Load(stream);
+            if (!mapXbf.HasSizedTileGrid())
+            {
+                return null;
+            }
+
+            ApplyOriginalMapManifest(map, mapXbf);
+            Terrain newTerrain = new Terrain(terrainRenderer);
+            float tileSize = map.Manifest.TileSize > 0 ? map.Manifest.TileSize : 32f;
+            currentMapMin = Vector2.Zero;
+            currentMapMax = new Vector2(mapXbf.MapSize.X * tileSize, mapXbf.MapSize.Y * tileSize);
+            currentHeightField = TryLoadHeightField(map);
+            currentNavigationData = MapNavigationData.Build(mapXbf);
+            currentLightingData = TryLoadLightingData(map);
+            MapTerrainMaterialData terrainMaterialData = MapTerrainMaterialData.Load(assetManager, map, currentLightingData);
+            string sharedResource = ResolveOriginalMapMeshResource(map, mapXbfPath);
+            if (!string.IsNullOrWhiteSpace(sharedResource))
+            {
+                try
+                {
+                    Mesh terrainMesh = assetManager.Load<XbfMesh>(this, sharedResource);
+                    ApplyOriginalTerrainMaterial(terrainMesh, terrainMaterialData);
+                    MeshInstance meshInstance = new MeshInstance(terrainMesh);
+                    newTerrain.AddLayer(meshInstance);
+                }
+                catch
+                {
+                }
+            }
+
+            for (int y = 0; y < mapXbf.MapSize.Y; y++)
+            {
+                for (int x = 0; x < mapXbf.MapSize.X; x++)
+                {
+                    int tileType = mapXbf.TileAt(x, y);
+                    Vector2 worldCenter = CellToWorld(new Vector2i(x, y), tileSize);
+                    float worldHeight = SampleWorldHeight(worldCenter.X, worldCenter.Y);
+                    newTerrain.AppendTile(new TerrainTile(
+                        null,
+                        (int)MathF.Round(worldCenter.X),
+                        (int)MathF.Round(worldHeight),
+                        (int)MathF.Round(worldCenter.Y),
+                        ResolveOriginalTileBuildable(tileType)));
+                }
+            }
+
+            foreach (MapXbfBuilding building in mapXbf.Buildings)
+            {
+                string actorType = ResolveOriginalBuildingActorType(building.Name);
+                if (string.IsNullOrWhiteSpace(actorType))
+                {
+                    continue;
+                }
+
+                map.Actors.Add(new GameMapActor
+                {
+                    Type = actorType,
+                    X = building.X * tileSize + tileSize * 0.5f,
+                    Y = SampleWorldHeight(building.X * tileSize + tileSize * 0.5f, building.Y * tileSize + tileSize * 0.5f),
+                    Z = building.Y * tileSize + tileSize * 0.5f
+                });
+            }
+
+            return newTerrain;
+        }
+
+        private void SpawnMapActors(GameMap map)
+        {
+            foreach (var actor in map.Actors)
+            {
+                if (string.IsNullOrWhiteSpace(actor.Type))
+                {
+                    continue;
+                }
+
+                SpawnActor(CreateActor(actor.Type), new Vector3(actor.X, actor.Y, actor.Z));
+            }
         }
 
         private Vector3 PickTileColor(GameMapTile tile)
@@ -449,7 +569,10 @@ namespace CorrinoEngine.Core
 
         public Actor QueryActorAtCursor()
         {
-            Vector3 scenePosition = camera.ToScene(new Vector2(ms.X, ms.Y));
+            if (!camera.TryProjectToGround(new Vector2(ms.X, ms.Y), 0f, out Vector3 scenePosition))
+            {
+                return null;
+            }
 
             return actors
                 .Where(o => o.MeshInstance != null)
@@ -464,7 +587,13 @@ namespace CorrinoEngine.Core
 
         public Vector3 QueryGroundAtCursor()
         {
-            return camera.ToScene(new Vector2(ms.X, ms.Y));
+            if (camera.TryProjectToGround(new Vector2(ms.X, ms.Y), 0f, out Vector3 worldPosition))
+            {
+                worldPosition.Y = SampleWorldHeight(worldPosition.X, worldPosition.Z);
+                return worldPosition;
+            }
+
+            return Vector3.Zero;
         }
 
         public bool ConsumeLeftClick()
@@ -545,11 +674,16 @@ namespace CorrinoEngine.Core
             if (selectedActor != null)
             {
                 selectedActor.OnSelect();
+                SetBuildFeedback($"Selected {GetSelectedActorDisplayName()}.");
+            }
+            else
+            {
+                SetBuildFeedback("Selection cleared.");
             }
 
             if (CanActorProduce(selectedActor))
             {
-                UIManager.Instance.StartUI("BuildQueueUI");
+                UIManager.Instance.StartUI("WorldHud");
             }
             else
             {
@@ -582,8 +716,15 @@ namespace CorrinoEngine.Core
         public void SelectBuildActor(string actorTypeName)
         {
             selectedBuildActorTypeName = actorTypeName;
-            buildFeedbackMessage = string.Empty;
-            buildFeedbackTimeLeft = 0;
+            if (!string.IsNullOrWhiteSpace(actorTypeName))
+            {
+                SetBuildFeedback($"Selected build: {GetActorDisplayName(GetActorData(actorTypeName))}.");
+            }
+            else
+            {
+                buildFeedbackMessage = string.Empty;
+                buildFeedbackTimeLeft = 0;
+            }
             UIManager.Instance.RefreshBuildQueueUI();
         }
 
@@ -641,6 +782,7 @@ namespace CorrinoEngine.Core
                 Cost = cost
             });
             selectedBuildActorTypeName = actorTypeName;
+            SetBuildFeedback($"Queued {GetActorDisplayName(GetActorData(actorTypeName))}.");
         }
 
         public void CancelSelectedProduction()
@@ -872,6 +1014,45 @@ namespace CorrinoEngine.Core
             return ResolveBuildCost(actorTypeName);
         }
 
+        public int GetActorIconTexture(string actorTypeName)
+        {
+            if (string.IsNullOrWhiteSpace(actorTypeName))
+            {
+                return 0;
+            }
+
+            if (actorIconTextures.TryGetValue(actorTypeName, out int cachedTexture))
+            {
+                return cachedTexture;
+            }
+
+            ActorData actorData = GetActorData(actorTypeName);
+            if (actorData?.DataField?.Properties == null || !actorData.DataField.Properties.TryGetValue("Icon", out object iconValue))
+            {
+                actorIconTextures[actorTypeName] = 0;
+                return 0;
+            }
+
+            string iconPath = iconValue?.ToString();
+            if (string.IsNullOrWhiteSpace(iconPath))
+            {
+                actorIconTextures[actorTypeName] = 0;
+                return 0;
+            }
+
+            try
+            {
+                int textureId = assetManager.Load<Texture>(this, iconPath).Id;
+                actorIconTextures[actorTypeName] = textureId;
+                return textureId;
+            }
+            catch
+            {
+                actorIconTextures[actorTypeName] = 0;
+                return 0;
+            }
+        }
+
         public bool CanAffordSelectedBuild()
         {
             if (string.IsNullOrWhiteSpace(selectedBuildActorTypeName))
@@ -966,10 +1147,12 @@ namespace CorrinoEngine.Core
         private Vector3 SnapBuildingPosition(Vector3 worldPosition)
         {
             const float gridSize = 32f;
+            float snappedX = MathF.Round(worldPosition.X / gridSize) * gridSize;
+            float snappedZ = MathF.Round(worldPosition.Z / gridSize) * gridSize;
             return new Vector3(
-                MathF.Round(worldPosition.X / gridSize) * gridSize,
-                0,
-                MathF.Round(worldPosition.Z / gridSize) * gridSize);
+                snappedX,
+                SampleWorldHeight(snappedX, snappedZ),
+                snappedZ);
         }
 
         private bool CanPlacePendingBuildingAt(Vector3 position)
@@ -989,8 +1172,7 @@ namespace CorrinoEngine.Core
 
             foreach (var cell in occupiedCells)
             {
-                TerrainTile terrainTile = FindTerrainTileAtCell(cell, tileSize);
-                if (terrainTile == null || !terrainTile.IsBuildable)
+                if (!IsCellBuildable(cell, tileSize))
                 {
                     return false;
                 }
@@ -1055,6 +1237,257 @@ namespace CorrinoEngine.Core
             }
 
             return surface.Contains("sand");
+        }
+
+        private string ResolveOriginalMapXbfPath(GameMap map)
+        {
+            if (!string.IsNullOrWhiteSpace(map.Metadata?.OriginalMapXbf))
+            {
+                return map.Metadata.OriginalMapXbf.Replace('\\', '/');
+            }
+
+            string mapDir = map.Metadata?.OriginalMapDir?.Replace('\\', '/');
+            if (string.IsNullOrWhiteSpace(mapDir))
+            {
+                return null;
+            }
+
+            string testPath = mapDir + "/test.xbf";
+            if (assetManager.Read(testPath) != null)
+            {
+                return testPath;
+            }
+
+            string debugPath = mapDir + "/debug.xbf";
+            if (assetManager.Read(debugPath) != null)
+            {
+                return debugPath;
+            }
+
+            return null;
+        }
+
+        private string ResolveOriginalMapMeshResource(GameMap map, string fallback)
+        {
+            if (!string.IsNullOrWhiteSpace(map.Manifest.TileResource))
+            {
+                return map.Manifest.TileResource;
+            }
+
+            return fallback;
+        }
+
+        private bool ResolveOriginalTileBuildable(int tileType)
+        {
+            return MapTerrainRules.IsBuildable(tileType);
+        }
+
+        private void ApplyOriginalTerrainMaterial(Mesh terrainMesh, MapTerrainMaterialData materialData)
+        {
+            if (terrainMesh == null || materialData == null)
+            {
+                return;
+            }
+
+            XbfShader shader = assetManager.Load<XbfShader>(this);
+            terrainMesh.Visit(mesh =>
+            {
+                if (mesh?.Name == null)
+                {
+                    return;
+                }
+
+                if (mesh.Name.StartsWith("terrain", StringComparison.OrdinalIgnoreCase) ||
+                    mesh.Name.StartsWith("map", StringComparison.OrdinalIgnoreCase) ||
+                    mesh.Name.StartsWith("ground", StringComparison.OrdinalIgnoreCase))
+                {
+                    // noop hint branch for future filtering
+                }
+            });
+
+            terrainMesh.Visit(mesh =>
+            {
+                if (mesh.GetShaderParameters() is XbfShader.XbfShaderParameters existing)
+                {
+                    mesh.TrySetShaderParameters(new XbfShader.XbfShaderParameters(shader)
+                    {
+                        Texture = existing.Texture,
+                        GroundColorTexture = materialData.GroundColorTexture,
+                        GroundLightTexture = materialData.GroundLightTexture,
+                        LightDirection = materialData.LightDirection,
+                        AmbientTint = materialData.AmbientTint,
+                        UseGroundColor = materialData.HasGroundColor,
+                        UseGroundLight = materialData.HasGroundLight
+                    });
+                }
+            });
+        }
+
+        private MapHeightField TryLoadHeightField(GameMap map)
+        {
+            if (string.IsNullOrWhiteSpace(map?.Metadata?.OriginalMapDir))
+            {
+                return null;
+            }
+
+            string[] candidates =
+            {
+                map.Metadata.OriginalMapDir.Replace('\\', '/') + "/test.CPF",
+                map.Metadata.OriginalMapDir.Replace('\\', '/') + "/debug.CPF"
+            };
+
+            foreach (string candidate in candidates)
+            {
+                using Stream stream = assetManager.Read(candidate);
+                if (stream == null)
+                {
+                    continue;
+                }
+
+                try
+                {
+                    return MapHeightField.Load(stream);
+                }
+                catch
+                {
+                }
+            }
+
+            return null;
+        }
+
+        private MapLightingData TryLoadLightingData(GameMap map)
+        {
+            string litPath = map?.Metadata?.GroundLit;
+            if (string.IsNullOrWhiteSpace(litPath))
+            {
+                litPath = map?.Metadata?.OriginalMapDir?.Replace('\\', '/') + "/test.lit";
+            }
+
+            if (string.IsNullOrWhiteSpace(litPath))
+            {
+                return null;
+            }
+
+            using Stream stream = assetManager.Read(litPath);
+            if (stream == null)
+            {
+                return null;
+            }
+
+            using StreamReader reader = new StreamReader(stream);
+            MapLightingData lighting = new MapLightingData();
+            bool first = true;
+            while (!reader.EndOfStream)
+            {
+                string line = reader.ReadLine();
+                if (string.IsNullOrWhiteSpace(line))
+                {
+                    continue;
+                }
+
+                string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length < 3)
+                {
+                    continue;
+                }
+
+                if (!float.TryParse(parts[0], out float a) ||
+                    !float.TryParse(parts[1], out float b) ||
+                    !float.TryParse(parts[2], out float c))
+                {
+                    continue;
+                }
+
+                if (first)
+                {
+                    lighting.Direction = new Vector3(a, b, c);
+                    first = false;
+                }
+                else
+                {
+                    lighting.Colors.Add(System.Drawing.Color.FromArgb(
+                        255,
+                        Math.Clamp((int)a, 0, 255),
+                        Math.Clamp((int)b, 0, 255),
+                        Math.Clamp((int)c, 0, 255)));
+                }
+            }
+
+            return lighting;
+        }
+
+        private float SampleWorldHeight(float worldX, float worldZ)
+        {
+            if (currentHeightField == null || !currentHeightField.IsLoaded || currentMapMax.X <= currentMapMin.X || currentMapMax.Y <= currentMapMin.Y)
+            {
+                return 0f;
+            }
+
+            float x01 = (worldX - currentMapMin.X) / (currentMapMax.X - currentMapMin.X);
+            float y01 = (worldZ - currentMapMin.Y) / (currentMapMax.Y - currentMapMin.Y);
+            return currentHeightField.SampleHeight01(x01, y01);
+        }
+
+        private bool IsCellBuildable(Vector2i cell, float tileSize)
+        {
+            if (currentNavigationData != null && currentNavigationData.IsLoaded)
+            {
+                Vector2 world = CellToWorld(cell, tileSize);
+                Vector2i navCell = MapNavigationData.WorldToNav(world, currentMapMin, currentMapMax);
+                return currentNavigationData.IsBuildableCell(navCell.X, navCell.Y);
+            }
+
+            TerrainTile terrainTile = FindTerrainTileAtCell(cell, tileSize);
+            return terrainTile != null && terrainTile.IsBuildable;
+        }
+
+        private void ApplyOriginalMapManifest(GameMap map, MapXbf mapXbf)
+        {
+            if (mapXbf.MapSize.X > 0)
+            {
+                map.Manifest.Width = mapXbf.MapSize.X;
+            }
+
+            if (mapXbf.MapSize.Y > 0)
+            {
+                map.Manifest.Height = mapXbf.MapSize.Y;
+            }
+
+            if (map.Manifest.TileSize <= 0)
+            {
+                map.Manifest.TileSize = 32f;
+            }
+        }
+
+        private string ResolveOriginalBuildingActorType(string buildingName)
+        {
+            if (string.IsNullOrWhiteSpace(buildingName))
+            {
+                return null;
+            }
+
+            string normalized = NormalizeIdentifier(buildingName);
+            foreach (ActorData actorData in modData.Manifest.ActorDataList)
+            {
+                if (NormalizeIdentifier(actorData.TypeName).Contains(normalized, StringComparison.OrdinalIgnoreCase) ||
+                    normalized.Contains(NormalizeIdentifier(actorData.TypeName), StringComparison.OrdinalIgnoreCase))
+                {
+                    return actorData.TypeName;
+                }
+            }
+
+            return null;
+        }
+
+        private static string NormalizeIdentifier(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                return string.Empty;
+            }
+
+            return new string(value.Where(char.IsLetterOrDigit).ToArray()).ToLowerInvariant();
         }
 
         private IEnumerable<Vector2i> GetFootprintCells(Vector3 centerPosition, Vector2i footprint, float tileSize)

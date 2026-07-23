@@ -60,6 +60,7 @@ namespace CorrinoEngine
 
 		protected override void OnUpdateFrame(FrameEventArgs args)
 		{
+			game.UpdateInput(MouseState, KeyboardState);
 			game.Update(args);
 		}
 

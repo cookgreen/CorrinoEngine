@@ -3,9 +3,90 @@ atreides-conyard:
 	Description: %{str_building_atreides_conyard_desc}Atreides Construction Yard provides all atreides buildings
 	ProvideBuildings: atreides
     
+atreides-windtrap:
+	Name: %{str_building_atreides_windtrap_name}Atreides Windtrap
+	Description: %{str_building_atreides_windtrap_desc}Atreides Windtrap will train the Atreides infantries
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_WindTrap.tga
+	Cost: 600
+    
 atreides-barrack:
 	Name: %{str_building_atreides_barrack_name}Atreides Barrack
 	Description: %{str_building_atreides_barrack_desc}Atreides Barrack will train the Atreides infantries
 	Prerequisites: atreides-conyard
 	FactionOwner: atreides
+	Icon: Textures/AT_Barracks.tga
+	Cost: 600
+    
+atreides-refinery:
+	Name: %{str_building_atreides_refinery_name}Atreides Refinery
+	Description: %{str_building_atreides_refinery_desc}The Refinery is the basis of all Spice production on Dune.
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_Hanger.tga
+	Cost: 2000
+    
+atreides-outpost:
+	Name: %{str_building_atreides_outpost_name}Atreides Outpost
+	Description: %{str_building_atreides_outpost_desc}When constructed, the Outpost will activate your radar screen.
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_Outpost.tga
+	Cost: 600
+    
+atreides-factory:
+	Name: %{str_building_atreides_factory_name}Atreides Factory
+	Description: %{str_building_atreides_factory_desc}Atreides Barrack will produce the vehicles
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_Factory.tga
+	Cost: 600
+    
+atreides-hangar:
+	Name: %{str_building_atreides_hangar_name}Atreides Hangar
+	Description: %{str_building_atreides_hangar_desc} The Hangar is where all air-based units are manufactured. 
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_Hangar.tga
+	Cost: 600
+    
+atreides-landingpad:
+	Name: %{str_building_atreides_landingpad_name}Landing Pad 
+	Description: %{str_building_atreides_landingpad_desc}Ornithopters and Gunships must have this building in order to re-arm their weapons.
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_Helipad.tga
+	Cost: 600
+    
+atreides-starport:
+	Name: %{str_building_atreides_starport_name}Atreides Barrack
+	Description: %{str_building_atreides_starport_desc}The Starport allows you to purchase air and land based vehicles from the CHOAM Merchant's Guild.
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_StarPort.tga
+	Cost: 600
+    
+atreides-machinegunpost:
+	Name: %{str_building_atreides_machinegunpost_name}Atreides Machinegun Post
+	Description: %{str_building_atreides_machinegunpost_desc}This is a defensive structure that is mainly used to stop infantry, but will whittle down vehicles as well.
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_Pillbox.tga
+	Cost: 600
+    
+atreides-rocket-tower:
+	Name: %{str_building_atreides_rocket_tower_name}Atreides Rocket Tower
+	Description: %{str_building_atreides_rocket_tower_desc}Much more powerful than the Machinegun Post, this defensive weapon will take down the heaviest of opponents, including air-based units. 
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_RocketTurret.tga
+	Cost: 600
+    
+atreides-palace:
+	Name: %{str_building_atreides_palace_name}Atreides Palace
+	Description: %{str_building_atreides_palace_desc}Like all palaces, the Atreides Palace gives you a super weapon. For the Atreides, it is the Hawk Strike.
+	Prerequisites: atreides-conyard
+	FactionOwner: atreides
+	Icon: Textures/AT_Palace.tga
 	Cost: 600

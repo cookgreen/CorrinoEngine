@@ -1,4 +1,4 @@
-﻿namespace CorrinoEngine.Graphics.Mesh
+namespace CorrinoEngine.Graphics.Mesh
 {
 	using Cameras;
 	using OpenTK.Graphics.OpenGL4;
@@ -142,5 +142,29 @@
 
 			GC.SuppressFinalize(this);
 		}
+
+        public void Visit(Action<Mesh> visitor)
+        {
+            visitor?.Invoke(this);
+            if (this.Children == null)
+                return;
+
+            foreach (var child in this.Children)
+                child?.Visit(visitor);
+        }
+
+        public bool TrySetShaderParameters(IShaderParameters shaderParameters)
+        {
+            if (shaderParameters == null)
+                return false;
+
+            this.ShaderParameters = shaderParameters;
+            return true;
+        }
+
+        public IShaderParameters GetShaderParameters()
+        {
+            return this.ShaderParameters;
+        }
 	}
 }

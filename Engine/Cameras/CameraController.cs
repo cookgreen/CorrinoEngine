@@ -28,6 +28,12 @@ namespace CorrinoEngine.Cameras
             this.ks = ks;
         }
 
+        public virtual void UpdateInput(MouseState ms, KeyboardState ks)
+        {
+            InjectMouseState(ms);
+            InjectKeyborardState(ks);
+        }
+
         public virtual void Update(float deltaTime)
         {
             camera.Update();

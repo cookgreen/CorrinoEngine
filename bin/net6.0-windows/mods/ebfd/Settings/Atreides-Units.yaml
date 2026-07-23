@@ -1,5 +1,28 @@
 atreides-infantry:
-	Name: %{str_unit_atreides_infantry_name}Atreides Infantry
+	Name: %{str_unit_atreides_infantry_name}Light Infantry
 	Description: %{str_unit_atreides_infantry_desc}Basic Atreides Infantry unit which can provide the basic firepower
 	Prerequisites: atreides-barrack
+	Icon: Textures/AT_Inf.tga
 	Cost: 100
+
+atreides-sniper:
+	Name: %{str_unit_atreides_sniper_name}Sniper
+	Description: %{str_unit_atreides_sniper_desc}The Sniper has the longest range of any infantry unit.
+	Prerequisites: atreides-barrack
+	Icon: Textures/AT_Sniper.tga
+	Cost: 100
+
+atreides-deploy-infantry:
+	Name: %{str_unit_atreides_deploy_infantry_name}Kindjal Infantry
+	Description: %{str_unit_atreides_deploy_infantry_desc}The Kindjal infantry carries two weapons: a small pistol for close combat, and a large tripod-mounted mortar cannon.
+	Prerequisites: atreides-barrack
+	Icon: Textures/AT_DeployInf.tga
+	Cost: 100
+    
+atreides-engineer:
+	Name: %{str_unit_atreides_engieer_name}Atreides Engineer
+	Description: %{str_unit_atreides_engieer_desc}Atreides engineer unit can repair and capture enemy building
+	Prerequisites: atreides-barrack
+	Icon: Textures/AT_Engineer.tga
+	Cost: 100
+    

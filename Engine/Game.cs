@@ -33,6 +33,11 @@ namespace CorrinoEngine
         private AssetManager assetManager;
         private HudRenderer hudRenderer;
         private Vector2 viewportSize;
+        private MouseState mouseState;
+        private KeyboardState keyboardState;
+        private float lastScrollY;
+        private bool wasLeftMouseDown;
+        private bool wasRightMouseDown;
 
         public GameState State
         {
@@ -53,6 +58,11 @@ namespace CorrinoEngine
 
             gameState = GameState.running;
             viewportSize = size;
+            mouseState = ms;
+            keyboardState = ks;
+            lastScrollY = ms.Scroll.Y;
+            wasLeftMouseDown = ms.IsButtonDown(MouseButton.Button1);
+            wasRightMouseDown = ms.IsButtonDown(MouseButton.Button2);
 
             GL.ClearColor(0, 0, 0, 1);
             GL.Enable(EnableCap.DepthTest);
@@ -74,6 +84,8 @@ namespace CorrinoEngine
             world = new World(assetManager, currentMod, size, ms, ks);
             UIManager.Instance.BindWorld(world);
             hudRenderer = new HudRenderer(size);
+            UIManager.Instance.RegisterScreen(new WorldHudScreen(world));
+            UIManager.Instance.RegisterScreen(new MainMenuScreen(world));
             world.Start();
         }
 
@@ -85,18 +97,34 @@ namespace CorrinoEngine
 
                 foreach (var asset in currentMod.Manifest.Asset.Assets)
                 {
-                    string assetFullPath = Path.Combine(Environment.CurrentDirectory, "Mods/" + currentMod.ID, asset);
-                    fileSystem.Add(new FolderFileSystem(assetFullPath));
+                    string assetFullPath = Path.Combine(currentMod.FullPath, asset);
+                    if (!Directory.Exists(assetFullPath))
+                    {
+                        continue;
+                    }
 
-                    foreach (var file in fileSystem.GetFiles())
+                    var folderFileSystem = new FolderFileSystem(assetFullPath);
+                    fileSystem.Add(folderFileSystem);
+
+                    foreach (var file in folderFileSystem.GetAllFiles())
                     {
                         if (file.EndsWith(".RFH", StringComparison.OrdinalIgnoreCase))
                         {
-                            fileSystem.Add(new RfhFileSystem(new Rfh(fileSystem.Read(file)!, fileSystem.Read(file.Substring(0, file.Length - 1) + "D")!)));
+                            string dataFile = file.Substring(0, file.Length - 1) + "D";
+                            Stream header = folderFileSystem.Read(file);
+                            Stream data = folderFileSystem.Read(dataFile);
+                            if (header != null && data != null)
+                            {
+                                fileSystem.Add(new RfhFileSystem(new Rfh(header, data)));
+                            }
                         }
                         else if (file.EndsWith(".BAG", StringComparison.OrdinalIgnoreCase))
                         {
-                            fileSystem.Add(new BagFileSystem(new Bag(fileSystem.Read(file)!)));
+                            Stream bagStream = folderFileSystem.Read(file);
+                            if (bagStream != null)
+                            {
+                                fileSystem.Add(new BagFileSystem(new Bag(bagStream)));
+                            }
                         }
                     }
                 }
@@ -108,23 +136,28 @@ namespace CorrinoEngine
         public void RenderFrame()
         {
             world.RenderFrame();
-            hudRenderer?.Render(world);
+            hudRenderer?.Render(world, UIManager.Instance);
         }
 
         public void Update(FrameEventArgs args)
         {
-            if (hudRenderer != null)
+            world.UpdateInput(mouseState, keyboardState);
+
+            UiInputState input = CreateUiInputState();
+            UIManager.Instance.Layout(new System.Drawing.RectangleF(0, 0, viewportSize.X, viewportSize.Y));
+            bool uiVisible = UIManager.Instance.Update(input);
+            if (uiVisible && (input.LeftPressed || input.RightPressed) && UIManager.Instance.IsBlockingWorldInput())
             {
-                hudRenderer.UpdateInteraction(world, new Vector2(world.MouseX, world.MouseY));
-                hudRenderer.HandleScroll(world, new Vector2(world.MouseX, world.MouseY), world.MouseScrollY);
-                bool handled = hudRenderer.TryHandleLeftClick(world, new Vector2(world.MouseX, world.MouseY));
-                if (handled)
-                {
-                    world.SuppressNextLeftClick();
-                }
+                world.SuppressNextLeftClick();
             }
 
             world.Update(args);
+        }
+
+        public void UpdateInput(MouseState ms, KeyboardState ks)
+        {
+            mouseState = ms;
+            keyboardState = ks;
         }
 
         public void Resize(Vector2 size)
@@ -136,6 +169,31 @@ namespace CorrinoEngine
             {
                 hudRenderer.Resize(size);
             }
+        }
+
+        private UiInputState CreateUiInputState()
+        {
+            bool leftDown = mouseState.IsButtonDown(MouseButton.Button1);
+            bool rightDown = mouseState.IsButtonDown(MouseButton.Button2);
+            float scrollDelta = mouseState.Scroll.Y - lastScrollY;
+            UiInputState input = new UiInputState
+            {
+                MousePosition = new Vector2(mouseState.X, mouseState.Y),
+                ScrollValue = mouseState.Scroll.Y,
+                ScrollDelta = scrollDelta,
+                LeftDown = leftDown,
+                LeftPressed = leftDown && !wasLeftMouseDown,
+                LeftReleased = !leftDown && wasLeftMouseDown,
+                RightDown = rightDown,
+                RightPressed = rightDown && !wasRightMouseDown,
+                RightReleased = !rightDown && wasRightMouseDown,
+                KeyboardState = keyboardState
+            };
+
+            lastScrollY = mouseState.Scroll.Y;
+            wasLeftMouseDown = leftDown;
+            wasRightMouseDown = rightDown;
+            return input;
         }
     }
 }
