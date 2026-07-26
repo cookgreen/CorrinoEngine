@@ -17,11 +17,17 @@ namespace CorrinoEngine.Forms
         private readonly List<string> allFiles;
         private Bitmap currentPreviewBitmap;
         private string selectedAssetPath;
+        private AssetPreviewControl assetPreviewControl;
 
         public frmAssetBrowser(AssetManager assetManager)
         {
             this.assetManager = assetManager;
             InitializeComponent();
+
+            assetPreviewControl = new AssetPreviewControl(assetManager);
+            modelPreviewHost.Controls.Clear();
+            modelPreviewHost.Controls.Add(assetPreviewControl);
+            assetPreviewControl.Dock = DockStyle.Fill;
 
             allFiles = assetManager.GetAllFiles()
                 .Where(path => !string.IsNullOrWhiteSpace(path))
@@ -155,6 +161,8 @@ namespace CorrinoEngine.Forms
             {
                 throw new FileNotFoundException("Asset stream was null.", assetPath);
             }
+
+            assetPreviewControl.PreviewXbf(assetPath);
 
             var xbf = new Xbf(stream);
             SetPreviewBitmap(null);

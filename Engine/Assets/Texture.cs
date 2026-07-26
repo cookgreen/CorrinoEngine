@@ -18,19 +18,24 @@ namespace CorrinoEngine.Assets
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (uint) TextureMinFilter.Linear);
 			GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (uint) TextureMagFilter.Linear);
 
-			var tga = new Tga(fileSystem.Read(path)!);
+			System.IO.Stream stream = fileSystem.Read(path);
 
-			GL.TexImage2D(
-				TextureTarget.Texture2D,
-				0,
-				PixelInternalFormat.Rgba8,
-				tga.Width,
-				tga.Height,
-				0,
-				PixelFormat.Rgba,
-				PixelType.UnsignedByte,
-				tga.Pixels
-			);
+			if (stream != null)
+            {
+                var tga = new Tga(stream!);
+
+                GL.TexImage2D(
+                    TextureTarget.Texture2D,
+                    0,
+                    PixelInternalFormat.Rgba8,
+                    tga.Width,
+                    tga.Height,
+                    0,
+                    PixelFormat.Rgba,
+                    PixelType.UnsignedByte,
+                    tga.Pixels
+                );
+            }
 		}
 
 		public void Dispose()

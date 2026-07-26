@@ -149,16 +149,16 @@ namespace CorrinoEngine.Renderer
 
         private void DrawGhostPlacement(Camera camera, Actor pendingPlacementActor, Vector3 pendingPlacementPosition)
         {
-            if (pendingPlacementActor?.MeshInstance == null)
+            if (pendingPlacementActor?.CurrentMeshInstance == null)
             {
                 return;
             }
 
-            Vector3 originalPosition = pendingPlacementActor.MeshInstance.Position;
-            pendingPlacementActor.MeshInstance.Position = pendingPlacementPosition;
-            pendingPlacementActor.MeshInstance.Draw(camera);
+            Vector3 originalPosition = pendingPlacementActor.CurrentMeshInstance.Position;
+            pendingPlacementActor.CurrentMeshInstance.Position = pendingPlacementPosition;
+            pendingPlacementActor.CurrentMeshInstance.Draw(camera);
 
-            pendingPlacementActor.MeshInstance.Position = originalPosition;
+            pendingPlacementActor.CurrentMeshInstance.Position = originalPosition;
         }
 
         private void DrawPlacementFootprint(Camera camera, Vector3 centerPosition, Vector2i footprint, float tileSize, bool isValid)

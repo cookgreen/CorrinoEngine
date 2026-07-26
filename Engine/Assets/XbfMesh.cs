@@ -22,37 +22,42 @@ namespace CorrinoEngine.Assets
 		{
 			this.assetManager = assetManager;
 
-			var xbf = new Xbf(fileSystem.Read(path)!);
+			Stream stream = fileSystem.Read(path);
 
-			this.Name = Path.GetFileNameWithoutExtension(path);
+            if (stream != null)
+            {
+                var xbf = new Xbf(stream!);
 
-			// TODO: Some textures are using additional flags by prefixing their filenames:
-			// TODO: = => apply player color to 0000?? pixels
-			// TODO: ! => render additive
-			// TODO: % might be ""
-			// TODO: @ might be ""
+                this.Name = Path.GetFileNameWithoutExtension(path);
 
-			this.Children = xbf.Objects.Select(
-					xbfObject => XbfMesh.LoadXbfObject(
-						xbfObject,
-						this.assetManager.Load<XbfShader>(this),
-						xbf.Textures.Select(
-								name =>
-								{
-									try
-									{
-										return this.assetManager.Load<Texture>(this, $"Textures/{name}").Id;
-									}
-									catch (Exception)
-									{
-										return this.assetManager.Load<Texture>(this, "Textures/white.tga").Id;
-									}
-								}
-							)
-							.ToArray()
-					)
-				)
-				.ToArray();
+                // TODO: Some textures are using additional flags by prefixing their filenames:
+                // TODO: = => apply player color to 0000?? pixels
+                // TODO: ! => render additive
+                // TODO: % might be ""
+                // TODO: @ might be ""
+
+                this.Children = xbf.Objects.Select(
+                        xbfObject => XbfMesh.LoadXbfObject(
+                            xbfObject,
+                            this.assetManager.Load<XbfShader>(this),
+                            xbf.Textures.Select(
+                                    name =>
+                                    {
+                                        try
+                                        {
+                                            return this.assetManager.Load<Texture>(this, $"Textures/{name}").Id;
+                                        }
+                                        catch (Exception)
+                                        {
+                                            return this.assetManager.Load<Texture>(this, "Textures/white.tga").Id;
+                                        }
+                                    }
+                                )
+                                .ToArray()
+                        )
+                    )
+                    .ToArray();
+            }
 		}
 
 		private static Mesh LoadXbfObject(XbfObject xbfObject, XbfShader shader, IReadOnlyList<int> textures)

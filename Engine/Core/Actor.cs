@@ -1,3 +1,4 @@
+using CorrinoEngine.Assets;
 using CorrinoEngine.Cameras;
 using CorrinoEngine.Fields;
 using CorrinoEngine.Graphics.Mesh;
@@ -9,13 +10,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows.Forms;
 
 namespace CorrinoEngine.Core
 {
     public class Actor
     {
         private ActorData actorData;
-        private MeshInstance meshInstance;
+        private string currentSequence;
+        private MeshInstance currentMeshInstance;
+        private Dictionary<string, MeshInstance> meshInstances;
         private List<Field> fields;
         private Queue<ProductionOrder> productionQueue;
         private Vector3 moveTarget;
@@ -32,20 +36,30 @@ namespace CorrinoEngine.Core
         {
             get { return actorData; }
         }
-        public MeshInstance MeshInstance
+        public string CurrentSequence
         {
-            get { return meshInstance; }
+            get { return currentSequence; }
+            set { currentSequence = value; }
+        }
+        public MeshInstance CurrentMeshInstance
+        {
+            get { return currentMeshInstance; }
+            set { currentMeshInstance = value; }
+        }
+        public Dictionary<string, MeshInstance> MeshInstances
+        {
+            get { return meshInstances; }
         }
         public Vector3 Position
         {
             get
             {
-                if (meshInstance == null)
+                if (currentMeshInstance == null)
                 {
                     return Vector3.Zero;
                 }
 
-                return meshInstance.Position;
+                return currentMeshInstance.Position;
             }
         }
         public float SelectionRadius
@@ -98,7 +112,12 @@ namespace CorrinoEngine.Core
         {
             get
             {
-                return !IsBuilding;
+                string canMoveStr = GetFieldValue("CanMove")?.ToString();
+                if (!string.IsNullOrWhiteSpace(canMoveStr)) 
+                {
+                    return bool.Parse(canMoveStr);
+                }
+                return false;
             }
         }
         public IReadOnlyCollection<ProductionOrder> ProductionQueue
@@ -118,6 +137,8 @@ namespace CorrinoEngine.Core
             {
                 selectionRadius = 72;
             }
+            meshInstances = new Dictionary<string, MeshInstance>();
+            currentMeshInstance = null;
         }
 
         private void parseFields()
@@ -154,13 +175,15 @@ namespace CorrinoEngine.Core
 
         public void Spawn(MeshInstance meshInstance)
         {
-            this.meshInstance = meshInstance;
+            this.currentMeshInstance = meshInstance;
             moveTarget = meshInstance.Position;
         }
 
         public void Draw(FrameEventArgs args, Camera camera)
         {
-            meshInstance.Draw(camera);
+            int start = actorData[currentSequence].AnimDataSetting.Start;
+            int end = start + actorData[currentSequence].AnimDataSetting.Length;
+            currentMeshInstance.Draw(camera, start, end);
         }
 
         public void OnSelect()
@@ -188,10 +211,10 @@ namespace CorrinoEngine.Core
         public void SetGroundHeightProvider(Func<float, float, float> provider)
         {
             groundHeightProvider = provider;
-            if (meshInstance != null)
+            if (currentMeshInstance != null)
             {
-                meshInstance.Position = SnapToGround(meshInstance.Position);
-                moveTarget = SnapToGround(moveTarget);
+                currentMeshInstance.Position = SnapToGround(currentMeshInstance.Position);
+                moveTarget = currentMeshInstance.Position;
             }
         }
 
@@ -201,6 +224,7 @@ namespace CorrinoEngine.Core
             constructionProgress = 0f;
             constructionDuration = Math.Max(0.25f, duration);
             constructionCompletedThisFrame = false;
+            currentMeshInstance = meshInstances["build"];
         }
 
         public bool ConsumeConstructionCompleted()
@@ -276,9 +300,9 @@ namespace CorrinoEngine.Core
         public void Update(FrameEventArgs args)
         {
             constructionCompletedThisFrame = false;
-            if (meshInstance != null)
+            if (currentMeshInstance != null)
             {
-                Vector2 currentXZ = new Vector2(meshInstance.Position.X, meshInstance.Position.Z);
+                Vector2 currentXZ = new Vector2(currentMeshInstance.Position.X, currentMeshInstance.Position.Z);
                 Vector2 targetXZ = new Vector2(moveTarget.X, moveTarget.Z);
                 Vector2 deltaXZ = targetXZ - currentXZ;
                 if (deltaXZ.LengthSquared > 1f)
@@ -286,17 +310,17 @@ namespace CorrinoEngine.Core
                     Vector2 stepXZ = deltaXZ.Normalized() * moveSpeed * (float)args.Time;
                     if (stepXZ.LengthSquared >= deltaXZ.LengthSquared)
                     {
-                        meshInstance.Position = SnapToGround(moveTarget);
+                        currentMeshInstance.Position = SnapToGround(moveTarget);
                     }
                     else
                     {
                         Vector2 nextXZ = currentXZ + stepXZ;
-                        meshInstance.Position = SnapToGround(new Vector3(nextXZ.X, meshInstance.Position.Y, nextXZ.Y));
+                        currentMeshInstance.Position = SnapToGround(new Vector3(nextXZ.X, currentMeshInstance.Position.Y, nextXZ.Y));
                     }
                 }
                 else
                 {
-                    meshInstance.Position = SnapToGround(meshInstance.Position);
+                    currentMeshInstance.Position = SnapToGround(currentMeshInstance.Position);
                 }
             }
 

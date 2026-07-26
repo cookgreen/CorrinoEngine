@@ -11,8 +11,12 @@ atreides-conyard:
 	light-damage2: Buildings/AT_Conyard_M2.xbf
     
 atreides-barrack:
-	build: Buildings/AT_barracks_HC.XbF
 	idle: Buildings/at_barracks_H0.xbf
+		Length: 71
+	idle-training: Buildings/at_barracks_H0.xbf
+		Start: 1
+		Length: 70
+	build: Buildings/AT_barracks_HC.XbF
 	damage1: Buildings/at_barracks_h1.xbf
 	damage2: Buildings/at_barracks_h2.xbf
 	destroy: Buildings/at_barracks_h3.xbf

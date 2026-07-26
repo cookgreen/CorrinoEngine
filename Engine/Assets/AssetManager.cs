@@ -64,6 +64,9 @@ namespace CorrinoEngine.Assets
 
 		public void Unload(object holder)
 		{
+			if (!assetsForHolder.ContainsKey(holder))
+				return;
+
 			foreach (var asset in this.assetsForHolder[holder])
 				this.Unload(holder, asset);
 

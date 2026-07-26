@@ -96,9 +96,10 @@ namespace CorrinoEngine.Forms
 
             string mapPath = lstMaps.SelectedItem.ToString();
             txtMapPath.Text = mapPath;
-            if (string.IsNullOrWhiteSpace(txtOutputName.Text))
+
+            string safeName = mapPath.Split('/').Last().Replace(' ', '-').Replace('#', '_').ToLowerInvariant();
+            if (txtOutputName.Text != safeName + ".yaml")
             {
-                string safeName = mapPath.Split('/').Last().Replace(' ', '-').Replace('#', '_').ToLowerInvariant();
                 txtOutputName.Text = safeName + ".yaml";
             }
         }

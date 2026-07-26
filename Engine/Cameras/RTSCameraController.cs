@@ -36,7 +36,7 @@ namespace CorrinoEngine.Cameras
         {
             HandleMovement(deltaTime);
             HandleZoom();
-            ClampToBounds();
+            //ClampToBounds();
             base.Update(deltaTime);
         }
 

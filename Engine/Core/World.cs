@@ -248,7 +248,6 @@ namespace CorrinoEngine.Core
 
         public void Start()
         {
-            LoadInitialMap();
             sceneManager.StartNewScene("MainMenu");
         }
 
@@ -342,7 +341,7 @@ namespace CorrinoEngine.Core
                 actors.Add(actor);
             }
 
-            worldRenderer.RenderObject(actor.MeshInstance);
+            worldRenderer.RenderObject(actor.CurrentMeshInstance);
         }
 
         private void parseFaction()
@@ -557,7 +556,7 @@ namespace CorrinoEngine.Core
 
         private Terrain TryBuildOriginalTerrain(GameMap map)
         {
-            map.Actors.Clear();
+            //map.Actors.Clear();
             string mapXbfPath = ResolveOriginalMapXbfPath(map);
             if (string.IsNullOrWhiteSpace(mapXbfPath))
             {
@@ -587,19 +586,19 @@ namespace CorrinoEngine.Core
             MapTerrainMaterialData terrainMaterialData = MapTerrainMaterialData.Load(assetManager, map, currentLightingData);
             bool addedVisualTerrain = false;
 
-            try
-            {
-                Mesh cpfTerrainMesh = TerrainMeshFactory.CreateOriginalTerrainMesh(
-                    currentHeightField,
-                    terrainMaterialData,
-                    currentMapMax - currentMapMin,
-                    160);
-                newTerrain.AddLayer(new MeshInstance(cpfTerrainMesh));
-                addedVisualTerrain = true;
-            }
-            catch
-            {
-            }
+            //try
+            //{
+            //    Mesh cpfTerrainMesh = TerrainMeshFactory.CreateOriginalTerrainMesh(
+            //        currentHeightField,
+            //        terrainMaterialData,
+            //        currentMapMax - currentMapMin,
+            //        160);
+            //    newTerrain.AddLayer(new MeshInstance(cpfTerrainMesh));
+            //    addedVisualTerrain = true;
+            //}
+            //catch
+            //{
+            //}
 
             string sharedResource = ResolveOriginalMapMeshResource(map, mapXbfPath);
             if (!addedVisualTerrain && !string.IsNullOrWhiteSpace(sharedResource))
@@ -718,7 +717,7 @@ namespace CorrinoEngine.Core
             }
 
             return actors
-                .Where(o => o.MeshInstance != null && !o.IsBuilding)
+                .Where(o => o.CurrentMeshInstance != null && !o.IsBuilding)
                 .Select(o => new
                 {
                     Actor = o,
@@ -769,7 +768,7 @@ namespace CorrinoEngine.Core
         public void SelectActorsInRectangle(RectangleF rect)
         {
             List<Actor> hits = actors
-                .Where(actor => actor.MeshInstance != null)
+                .Where(actor => actor.CurrentMeshInstance != null)
                 .Where(actor =>
                 {
                     RectangleF actorBounds = GetActorScreenBounds(actor);
@@ -1454,7 +1453,7 @@ namespace CorrinoEngine.Core
                 }
             }
 
-            foreach (Actor actor in actors.Where(o => o.MeshInstance != null))
+            foreach (Actor actor in actors.Where(o => o.CurrentMeshInstance != null))
             {
                 foreach (var cell in occupiedCells)
                 {
@@ -1915,7 +1914,7 @@ namespace CorrinoEngine.Core
 
         private RectangleF GetActorScreenBounds(Actor actor)
         {
-            if (actor?.MeshInstance == null)
+            if (actor?.CurrentMeshInstance == null)
             {
                 return RectangleF.Empty;
             }
@@ -1941,7 +1940,7 @@ namespace CorrinoEngine.Core
         {
             float tileSize = currentMap?.Manifest?.TileSize > 0 ? currentMap.Manifest.TileSize : 48f;
             return actors
-                .Where(actor => actor?.MeshInstance != null && actor.IsBuilding)
+                .Where(actor => actor?.CurrentMeshInstance != null && actor.IsBuilding)
                 .Select(actor => new
                 {
                     Actor = actor,
@@ -1981,7 +1980,7 @@ namespace CorrinoEngine.Core
         {
             float tileSize = currentMap?.Manifest?.TileSize > 0 ? currentMap.Manifest.TileSize : 48f;
             return actors
-                .Where(actor => actor?.MeshInstance != null && actor.IsBuilding)
+                .Where(actor => actor?.CurrentMeshInstance != null && actor.IsBuilding)
                 .Select(actor => GetBuildingWorldBounds(actor, tileSize))
                 .ToList();
         }
@@ -2135,24 +2134,48 @@ namespace CorrinoEngine.Core
         {
             if (actor == null ||
                 actor.ActorData == null ||
-                actor.ActorData.AnimSettings?.AnimSettings == null ||
-                actor.ActorData.AnimSettings.AnimSettings.Count == 0 ||
+                actor.ActorData.ActorAnimSettings?.AnimSettings == null ||
+                actor.ActorData.ActorAnimSettings.AnimSettings.Count == 0 ||
                 actor.ActorData["idle"] == null)
             {
                 return;
             }
 
             Vector3 groundedPosition = new Vector3(position.X, SampleWorldHeight(position.X, position.Z), position.Z);
-            if (actor.MeshInstance == null)
+            if (actor.MeshInstances.Count == 0)
             {
-                Mesh mesh = assetManager.Load<XbfMesh>(this, actor.ActorData["idle"].Resource);
-                MeshInstance meshInstance = new MeshInstance(mesh);
-                meshInstance.Position = groundedPosition;
-                actor.Spawn(meshInstance);
+                for (int i = 0; i < actor.ActorData.ActorAnimSettings.AnimSettings.Count; i++) 
+                {
+                    try
+                    {
+                        AnimSetting animSetting = actor.ActorData.ActorAnimSettings.AnimSettings[i];
+
+                        Mesh mesh = assetManager.Load<XbfMesh>(this, actor.ActorData[animSetting.AnimName].Resource);
+                        MeshInstance meshInstance = new MeshInstance(mesh);
+
+                        actor.MeshInstances[animSetting.AnimName] = meshInstance;
+
+                        meshInstance.Position = groundedPosition;
+                    }
+                    catch {
+                        continue;
+                    }
+                }
+
+                string currentSequence = "build";
+                MeshInstance currentMeshInstance = null;
+                if (actor.MeshInstances.Count > 0)
+                {
+                    currentMeshInstance = actor.MeshInstances.ContainsKey(currentSequence)?actor.MeshInstances[currentSequence]: actor.MeshInstances["idle"];
+                }
+                actor.CurrentSequence = currentSequence;
+                actor.CurrentMeshInstance = currentMeshInstance;
+
+                actor.Spawn(currentMeshInstance);
             }
             else
             {
-                actor.MeshInstance.Position = groundedPosition;
+                actor.CurrentMeshInstance.Position = groundedPosition;
             }
         }
 
