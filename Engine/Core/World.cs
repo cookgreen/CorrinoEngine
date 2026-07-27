@@ -236,6 +236,8 @@ namespace CorrinoEngine.Core
 
             worldRenderer = new WorldRenderer();
             terrainRenderer = new TerrainRenderer();
+
+            RefreshAvailableMaps();
         }
 
         public void UpdateInput(MouseState mouseState, KeyboardState keyboardState)
@@ -388,7 +390,7 @@ namespace CorrinoEngine.Core
 
         public void Update(FrameEventArgs args)
         {
-            camController.Update((float)args.Time);
+            camController.Update((float)args.Time, currentHeightField);
             orderManager.Update();
             UpdateProductionQueues((float)args.Time);
             UpdateBuildFeedback((float)args.Time);
@@ -511,11 +513,11 @@ namespace CorrinoEngine.Core
 
             float tileSize = map.Manifest.TileSize > 0 ? map.Manifest.TileSize : 48f;
             float padding = tileSize * 2f;
-            float width = map.Manifest.Width * tileSize;
-            float height = map.Manifest.Height * tileSize;
+            float length = map.Manifest.Width * tileSize / 2;
+            float width = map.Manifest.Height * tileSize / 2;
             rtsCameraController.SetMapBounds(
                 new Vector2(-padding, -padding),
-                new Vector2(width + padding, height + padding));
+                new Vector2(length + padding, width + padding));
         }
 
         private Terrain BuildTerrain(GameMap map)
@@ -583,6 +585,7 @@ namespace CorrinoEngine.Core
             currentHeightField = TryLoadHeightField(map);
             currentNavigationData = MapNavigationData.Build(mapXbf);
             currentLightingData = TryLoadLightingData(map);
+            map.Metadata.MapHeightField = currentHeightField;
             MapTerrainMaterialData terrainMaterialData = MapTerrainMaterialData.Load(assetManager, map, currentLightingData);
             bool addedVisualTerrain = false;
 
@@ -606,7 +609,7 @@ namespace CorrinoEngine.Core
                 try
                 {
                     Mesh terrainMesh = assetManager.Load<XbfMesh>(this, sharedResource);
-                    ApplyOriginalTerrainMaterial(terrainMesh, terrainMaterialData);
+                    //ApplyOriginalTerrainMaterial(terrainMesh, terrainMaterialData);
                     MeshInstance meshInstance = new MeshInstance(terrainMesh);
                     newTerrain.AddLayer(meshInstance);
                 }

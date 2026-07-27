@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #A1 JF Caladan Capital LOD2
+	Author: Imported from original map
+	Width: 256
+	Height: 192
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #A1 JF Caladan Capital LOD2
+	OriginalMapXbf: #A1 JF Caladan Capital LOD2/test.xbf
+	GroundColor: #A1 JF Caladan Capital LOD2/test.CPT
+	GroundPalette: #A1 JF Caladan Capital LOD2/test.CPF
+	GroundLight: #A1 JF Caladan Capital LOD2/texture.dat
+	GroundLit: #A1 JF Caladan Capital LOD2/test.lit
+	MapScale: 0.0625

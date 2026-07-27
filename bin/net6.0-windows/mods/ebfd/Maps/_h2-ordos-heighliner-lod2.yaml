@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #H2 Ordos Heighliner LOD2
+	Author: Imported from original map
+	Width: 128
+	Height: 176
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #H2 Ordos Heighliner LOD2
+	OriginalMapXbf: #H2 Ordos Heighliner LOD2/test.xbf
+	GroundColor: #H2 Ordos Heighliner LOD2/test.CPT
+	GroundPalette: #H2 Ordos Heighliner LOD2/test.CPF
+	GroundLight: #H2 Ordos Heighliner LOD2/texture.dat
+	GroundLit: #H2 Ordos Heighliner LOD2/test.lit
+	MapScale: 0.0625

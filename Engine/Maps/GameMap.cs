@@ -313,6 +313,7 @@ namespace CorrinoEngine.Maps
         public string GroundLight { get; set; }
         public string GroundLit { get; set; }
         public float MapScale { get; set; } = 0.0625f;
+        public MapHeightField MapHeightField { get; set; }
         public bool HasOriginalMapData =>
             !string.IsNullOrWhiteSpace(OriginalMapDir) || !string.IsNullOrWhiteSpace(OriginalMapXbf);
     }

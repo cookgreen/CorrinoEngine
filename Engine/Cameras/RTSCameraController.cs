@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using OpenTK.Mathematics;
+using CorrinoEngine.Maps;
 
 namespace CorrinoEngine.Cameras
 {
@@ -32,12 +33,29 @@ namespace CorrinoEngine.Cameras
             ClampToBounds();
         }
 
-        public override void Update(float deltaTime)
+        public override void Update(float deltaTime, MapHeightField mapHeightField)
         {
+            Vector3 focusPoint = GetGroundFocusPoint();
+
+            // 1. 防御性处理：防止因镜头剧烈移动导致 focusPoint 越界，从而引发采样崩溃
+            float safeWorldX = MathHelper.Clamp(focusPoint.X, mapMin.X, mapMax.X);
+            float safeWorldZ = MathHelper.Clamp(focusPoint.Z, mapMin.Y, mapMax.Y);
+
+            // 2. 映射到 0~1 的 UV 空间
+            float x01 = (focusPoint.X - mapMin.X) / (mapMax.X - mapMin.X);
+            float y01 = (focusPoint.Z - mapMin.Y) / (mapMax.Y - mapMin.Y);
+
+            // 3. 非空保护并动态更新参考高度
+            if (mapHeightField != null)
+            {
+                ReferenceGroundHeight = mapHeightField.SampleHeight01(x01, y01);
+            }
+
             HandleMovement(deltaTime);
             HandleZoom();
-            //ClampToBounds();
-            base.Update(deltaTime);
+            ClampToBounds();
+
+            base.Update(deltaTime, mapHeightField);
         }
 
         private void HandleMovement(float deltaTime)
@@ -121,15 +139,16 @@ namespace CorrinoEngine.Cameras
             if (MathF.Abs(clampedX - focusPoint.X) < float.Epsilon && MathF.Abs(clampedZ - focusPoint.Z) < float.Epsilon)
                 return;
 
-            SetGroundFocusPoint(new Vector3(clampedX, 0, clampedZ));
+            // 传入修正后的 X 和 Z，Y 轴保持 ReferenceGroundHeight
+            SetGroundFocusPoint(new Vector3(clampedX, ReferenceGroundHeight, clampedZ));
         }
-
         private Vector3 GetGroundFocusPoint()
         {
             if (MathF.Abs(camera.Direction.Y) < float.Epsilon)
                 return camera.Position;
 
-            float distance = -camera.Position.Y / camera.Direction.Y;
+            // 核心修复：与真实的参考高度平面相交，而不是强行和 Y=0 相交
+            float distance = (ReferenceGroundHeight - camera.Position.Y) / camera.Direction.Y;
             return camera.Position + camera.Direction * distance;
         }
 
@@ -138,9 +157,13 @@ namespace CorrinoEngine.Cameras
             if (MathF.Abs(camera.Direction.Y) < float.Epsilon)
                 return;
 
-            float height = camera.Position.Y;
-            float distance = -height / camera.Direction.Y;
-            camera.Position = focusPoint - camera.Direction * distance;
+            // 核心修复：基于参考高度反推摄像机位置
+            float heightDifference = camera.Position.Y - ReferenceGroundHeight;
+            float distance = heightDifference / -camera.Direction.Y;
+
+            // 确保 focusPoint 的 Y 轴被固定在参考高度上，防止产生额外的斜边误差
+            Vector3 correctedFocusPoint = new Vector3(focusPoint.X, ReferenceGroundHeight, focusPoint.Z);
+            camera.Position = correctedFocusPoint - camera.Direction * distance;
         }
     }
 }

@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #D1 Atreides Homeworld Defence LOD2
+	Author: Imported from original map
+	Width: 152
+	Height: 192
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #D1 Atreides Homeworld Defence LOD2
+	OriginalMapXbf: #D1 Atreides Homeworld Defence LOD2/test.xbf
+	GroundColor: #D1 Atreides Homeworld Defence LOD2/test.CPT
+	GroundPalette: #D1 Atreides Homeworld Defence LOD2/test.CPF
+	GroundLight: #D1 Atreides Homeworld Defence LOD2/texture.dat
+	GroundLit: #D1 Atreides Homeworld Defence LOD2/test.lit
+	MapScale: 0.0625

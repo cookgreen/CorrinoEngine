@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #D2 Ordos Homeworld Defense LOD2
+	Author: Imported from original map
+	Width: 224
+	Height: 96
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #D2 Ordos Homeworld Defense LOD2
+	OriginalMapXbf: #D2 Ordos Homeworld Defense LOD2/test.xbf
+	GroundColor: #D2 Ordos Homeworld Defense LOD2/test.CPT
+	GroundPalette: #D2 Ordos Homeworld Defense LOD2/test.CPF
+	GroundLight: #D2 Ordos Homeworld Defense LOD2/texture.dat
+	GroundLit: #D2 Ordos Homeworld Defense LOD2/test.lit
+	MapScale: 0.0625

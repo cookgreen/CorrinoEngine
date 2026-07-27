@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #C1 Harkonnen Civil War Attack LOD2
+	Author: Imported from original map
+	Width: 256
+	Height: 256
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #C1 Harkonnen Civil War Attack LOD2
+	OriginalMapXbf: #C1 Harkonnen Civil War Attack LOD2/test.xbf
+	GroundColor: #C1 Harkonnen Civil War Attack LOD2/test.CPT
+	GroundPalette: #C1 Harkonnen Civil War Attack LOD2/test.CPF
+	GroundLight: #C1 Harkonnen Civil War Attack LOD2/texture.dat
+	GroundLit: #C1 Harkonnen Civil War Attack LOD2/test.lit
+	MapScale: 0.0625

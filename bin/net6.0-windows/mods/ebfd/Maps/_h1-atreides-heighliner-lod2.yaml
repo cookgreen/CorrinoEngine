@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #H1 Atreides Heighliner LOD2
+	Author: Imported from original map
+	Width: 192
+	Height: 144
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #H1 Atreides Heighliner LOD2
+	OriginalMapXbf: #H1 Atreides Heighliner LOD2/test.xbf
+	GroundColor: #H1 Atreides Heighliner LOD2/test.CPT
+	GroundPalette: #H1 Atreides Heighliner LOD2/test.CPF
+	GroundLight: #H1 Atreides Heighliner LOD2/texture.dat
+	GroundLit: #H1 Atreides Heighliner LOD2/test.lit
+	MapScale: 0.0625

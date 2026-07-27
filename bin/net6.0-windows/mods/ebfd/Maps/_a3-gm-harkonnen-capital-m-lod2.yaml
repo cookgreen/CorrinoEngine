@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #A3 GM Harkonnen Capital M LOD2
+	Author: Imported from original map
+	Width: 232
+	Height: 232
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #A3 GM Harkonnen Capital M LOD2
+	OriginalMapXbf: #A3 GM Harkonnen Capital M LOD2/test.xbf
+	GroundColor: #A3 GM Harkonnen Capital M LOD2/test.CPT
+	GroundPalette: #A3 GM Harkonnen Capital M LOD2/test.CPF
+	GroundLight: #A3 GM Harkonnen Capital M LOD2/texture.dat
+	GroundLit: #A3 GM Harkonnen Capital M LOD2/test.lit
+	MapScale: 0.0625

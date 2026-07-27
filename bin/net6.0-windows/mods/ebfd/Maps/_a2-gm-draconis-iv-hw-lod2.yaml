@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #A2 GM Draconis IV HW LOD2
+	Author: Imported from original map
+	Width: 256
+	Height: 208
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #A2 GM Draconis IV HW LOD2
+	OriginalMapXbf: #A2 GM Draconis IV HW LOD2/test.xbf
+	GroundColor: #A2 GM Draconis IV HW LOD2/test.CPT
+	GroundPalette: #A2 GM Draconis IV HW LOD2/test.CPF
+	GroundLight: #A2 GM Draconis IV HW LOD2/texture.dat
+	GroundLit: #A2 GM Draconis IV HW LOD2/test.lit
+	MapScale: 0.0625

@@ -10,6 +10,10 @@ namespace CorrinoEngine.UI
         private readonly PanelWidget rootPanel;
         private readonly PanelWidget modalPanel;
         private readonly ButtonWidget startButton;
+        private readonly ButtonWidget loadGameButton;
+        private readonly ButtonWidget customBattleButton;
+        private readonly ButtonWidget optionsButton;
+        private readonly ButtonWidget exitButton;
         private readonly ButtonWidget prevMapButton;
         private readonly ButtonWidget nextMapButton;
 
@@ -17,17 +21,53 @@ namespace CorrinoEngine.UI
         {
             this.world = world;
             BlocksWorldInput = true;
-            rootPanel = new PanelWidget { BackgroundColor = Color.FromArgb(180, 0, 0, 0), ConsumeInput = true };
+            rootPanel = new PanelWidget { BackgroundColor = Color.FromArgb(255, 0, 0, 0), ConsumeInput = true };
             modalPanel = new PanelWidget { BackgroundColor = Color.FromArgb(220, 12, 16, 22), ConsumeInput = true };
             startButton = new ButtonWidget
             {
-                Text = "Start Battle",
+                Text = "Single Player",
                 BackgroundColor = Color.FromArgb(220, 126, 97, 40),
                 HoverColor = Color.FromArgb(235, 144, 109, 44),
                 Clicked = () =>
                 {
                     UIManager.Instance.CloseScreen(Name);
                     this.world.EnterInnerGame();
+                }
+            };
+            loadGameButton = new ButtonWidget
+            {
+                Text = "Load Game",
+                BackgroundColor = Color.FromArgb(220, 126, 97, 40),
+                HoverColor = Color.FromArgb(235, 144, 109, 44),
+                Clicked = () =>
+                {
+                }
+            };
+            customBattleButton = new ButtonWidget
+            {
+                Text = "Custom Battle",
+                BackgroundColor = Color.FromArgb(220, 126, 97, 40),
+                HoverColor = Color.FromArgb(235, 144, 109, 44),
+                Clicked = () =>
+                {
+                }
+            };
+            optionsButton = new ButtonWidget
+            {
+                Text = "Options",
+                BackgroundColor = Color.FromArgb(220, 126, 97, 40),
+                HoverColor = Color.FromArgb(235, 144, 109, 44),
+                Clicked = () =>
+                {
+                }
+            };
+            exitButton = new ButtonWidget
+            {
+                Text = "Exit",
+                BackgroundColor = Color.FromArgb(220, 126, 97, 40),
+                HoverColor = Color.FromArgb(235, 144, 109, 44),
+                Clicked = () =>
+                {
                 }
             };
             prevMapButton = new ButtonWidget
@@ -50,15 +90,23 @@ namespace CorrinoEngine.UI
             modalPanel.AddChild(prevMapButton);
             modalPanel.AddChild(nextMapButton);
             modalPanel.AddChild(startButton);
+            modalPanel.AddChild(loadGameButton);
+            modalPanel.AddChild(customBattleButton);
+            modalPanel.AddChild(optionsButton);
+            modalPanel.AddChild(exitButton);
         }
 
         public override void Layout(RectangleF viewport)
         {
             rootPanel.Layout(viewport);
-            modalPanel.Layout(new RectangleF(viewport.Width * 0.5f - 240f, viewport.Height * 0.5f - 110f, 480f, 220f));
+            modalPanel.Layout(new RectangleF(viewport.Width * 0.5f - 250f, viewport.Height * 0.5f - 200f, 480f, 500f));
             prevMapButton.Layout(new RectangleF(modalPanel.Bounds.X + 30f, modalPanel.Bounds.Y + 104f, 36f, 30f));
             nextMapButton.Layout(new RectangleF(modalPanel.Bounds.Right - 66f, modalPanel.Bounds.Y + 104f, 36f, 30f));
-            startButton.Layout(new RectangleF(modalPanel.Bounds.X + 170f, modalPanel.Bounds.Bottom - 60f, 140f, 34f));
+            startButton.Layout(new RectangleF(modalPanel.Bounds.X + 140f, modalPanel.Bounds.Bottom - 300f, 200f, 34f));
+            loadGameButton.Layout(new RectangleF(modalPanel.Bounds.X + 140f, modalPanel.Bounds.Bottom - 250f, 200f, 34f));
+            customBattleButton.Layout(new RectangleF(modalPanel.Bounds.X + 140f, modalPanel.Bounds.Bottom - 200f, 200f, 34f));
+            optionsButton.Layout(new RectangleF(modalPanel.Bounds.X + 140f, modalPanel.Bounds.Bottom - 150f, 200f, 34f));
+            exitButton.Layout(new RectangleF(modalPanel.Bounds.X + 140f, modalPanel.Bounds.Bottom - 100f, 200f, 34f));
         }
 
         public override void Render(UiRenderContext context)

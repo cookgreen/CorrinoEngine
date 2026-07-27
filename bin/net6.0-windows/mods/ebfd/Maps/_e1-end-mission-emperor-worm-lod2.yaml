@@ -1,0 +1,16 @@
+﻿Map:
+	Name: #E1 End Mission Emperor Worm LOD2
+	Author: Imported from original map
+	Width: 256
+	Height: 160
+	TileSize: 32
+	TileUvScale: 1
+
+Metadata:
+	OriginalMapDir: #E1 End Mission Emperor Worm LOD2
+	OriginalMapXbf: #E1 End Mission Emperor Worm LOD2/test.xbf
+	GroundColor: #E1 End Mission Emperor Worm LOD2/test.CPT
+	GroundPalette: #E1 End Mission Emperor Worm LOD2/test.CPF
+	GroundLight: #E1 End Mission Emperor Worm LOD2/texture.dat
+	GroundLit: #E1 End Mission Emperor Worm LOD2/test.lit
+	MapScale: 0.0625

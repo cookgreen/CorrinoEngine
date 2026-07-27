@@ -1,3 +1,4 @@
+using CorrinoEngine.Maps;
 using OpenTK.Windowing.GraphicsLibraryFramework;
 using System;
 using System.Collections.Generic;
@@ -12,6 +13,8 @@ namespace CorrinoEngine.Cameras
         protected Camera camera;
         protected MouseState ms;
         protected KeyboardState ks;
+
+        public float ReferenceGroundHeight { get; set; } = 0f;
 
         public CameraController(Camera camera)
         {
@@ -34,7 +37,7 @@ namespace CorrinoEngine.Cameras
             InjectKeyborardState(ks);
         }
 
-        public virtual void Update(float deltaTime)
+        public virtual void Update(float deltaTime, MapHeightField mapHeightField)
         {
             camera.Update();
         }
