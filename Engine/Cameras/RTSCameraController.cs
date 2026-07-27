@@ -135,7 +135,7 @@ namespace CorrinoEngine.Cameras
         {
             Vector3 focusPoint = GetGroundFocusPoint();
             float clampedX = MathHelper.Clamp(focusPoint.X, mapMin.X, mapMax.X);
-            float clampedZ = MathHelper.Clamp(focusPoint.Z, mapMin.Y, mapMax.Y);
+            float clampedZ = MathHelper.Clamp(focusPoint.Z, mapMax.Y * -1, mapMin.Y);
             if (MathF.Abs(clampedX - focusPoint.X) < float.Epsilon && MathF.Abs(clampedZ - focusPoint.Z) < float.Epsilon)
                 return;
 
